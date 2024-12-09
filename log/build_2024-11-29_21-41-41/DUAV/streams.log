@@ -1,0 +1,25 @@
+[0.796s] Invoking command in '/home/step/ros2_DUAV/src/DUAV': PYTHONPATH=/home/step/ros2_DUAV/build/DUAV/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/DUAV build --build-base /home/step/ros2_DUAV/build/DUAV/build install --record /home/step/ros2_DUAV/build/DUAV/install.log --single-version-externally-managed install_data
+[1.008s] running egg_info
+[1.009s] writing ../../build/DUAV/DUAV.egg-info/PKG-INFO
+[1.009s] writing dependency_links to ../../build/DUAV/DUAV.egg-info/dependency_links.txt
+[1.010s] writing entry points to ../../build/DUAV/DUAV.egg-info/entry_points.txt
+[1.010s] writing requirements to ../../build/DUAV/DUAV.egg-info/requires.txt
+[1.010s] writing top-level names to ../../build/DUAV/DUAV.egg-info/top_level.txt
+[1.012s] reading manifest file '../../build/DUAV/DUAV.egg-info/SOURCES.txt'
+[1.014s] writing manifest file '../../build/DUAV/DUAV.egg-info/SOURCES.txt'
+[1.014s] running build
+[1.014s] running build_py
+[1.014s] copying DUAV/pub_MAV.py -> /home/step/ros2_DUAV/build/DUAV/build/lib/DUAV
+[1.014s] running install
+[1.015s] running install_lib
+[1.016s] copying /home/step/ros2_DUAV/build/DUAV/build/lib/DUAV/pub_MAV.py -> /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV
+[1.017s] byte-compiling /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV/pub_MAV.py to pub_MAV.cpython-310.pyc
+[1.018s] running install_data
+[1.018s] running install_egg_info
+[1.019s] removing '/home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV-0.0.0-py3.10.egg-info' (and everything under it)
+[1.020s] Copying ../../build/DUAV/DUAV.egg-info to /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV-0.0.0-py3.10.egg-info
+[1.022s] running install_scripts
+[1.041s] Installing create_path script to /home/step/ros2_DUAV/install/DUAV/lib/DUAV
+[1.041s] Installing pub_MAV script to /home/step/ros2_DUAV/install/DUAV/lib/DUAV
+[1.041s] writing list of installed files to '/home/step/ros2_DUAV/build/DUAV/install.log'
+[1.063s] Invoked command in '/home/step/ros2_DUAV/src/DUAV' returned '0': PYTHONPATH=/home/step/ros2_DUAV/build/DUAV/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/DUAV build --build-base /home/step/ros2_DUAV/build/DUAV/build install --record /home/step/ros2_DUAV/build/DUAV/install.log --single-version-externally-managed install_data

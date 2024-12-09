@@ -1,0 +1,26 @@
+running egg_info
+writing ../../build/DUAV/DUAV.egg-info/PKG-INFO
+writing dependency_links to ../../build/DUAV/DUAV.egg-info/dependency_links.txt
+writing entry points to ../../build/DUAV/DUAV.egg-info/entry_points.txt
+writing requirements to ../../build/DUAV/DUAV.egg-info/requires.txt
+writing top-level names to ../../build/DUAV/DUAV.egg-info/top_level.txt
+reading manifest file '../../build/DUAV/DUAV.egg-info/SOURCES.txt'
+writing manifest file '../../build/DUAV/DUAV.egg-info/SOURCES.txt'
+running build
+running build_py
+copying DUAV/pub_MAV.py -> /home/step/ros2_DUAV/build/DUAV/build/lib/DUAV
+copying DUAV/create_path.py -> /home/step/ros2_DUAV/build/DUAV/build/lib/DUAV
+running install
+running install_lib
+copying /home/step/ros2_DUAV/build/DUAV/build/lib/DUAV/pub_MAV.py -> /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV
+copying /home/step/ros2_DUAV/build/DUAV/build/lib/DUAV/create_path.py -> /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV
+byte-compiling /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV/pub_MAV.py to pub_MAV.cpython-310.pyc
+byte-compiling /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV/create_path.py to create_path.cpython-310.pyc
+running install_data
+running install_egg_info
+removing '/home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV-0.0.0-py3.10.egg-info' (and everything under it)
+Copying ../../build/DUAV/DUAV.egg-info to /home/step/ros2_DUAV/install/DUAV/lib/python3.10/site-packages/DUAV-0.0.0-py3.10.egg-info
+running install_scripts
+Installing create_path script to /home/step/ros2_DUAV/install/DUAV/lib/DUAV
+Installing pub_MAV script to /home/step/ros2_DUAV/install/DUAV/lib/DUAV
+writing list of installed files to '/home/step/ros2_DUAV/build/DUAV/install.log'
