@@ -1,9 +1,0 @@
-[console_scripts]
-analyse_CAM = DUAV.analyse_CAM:main
-create_costmap = DUAV.create_costmap:main
-create_path = DUAV.create_path:main
-determine_plane_state = DUAV.determine_plane_state:main
-pub_MAV = DUAV.pub_MAV:main
-select_mission_type = DUAV.select_mission_type:main
-write_MAV = DUAV.write_MAV:main
-

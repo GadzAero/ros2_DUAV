@@ -1,6 +1,0 @@
-source;share/DUAV/hook/pythonpath.ps1
-source;share/DUAV/hook/pythonpath.dsv
-source;share/DUAV/hook/pythonpath.sh
-source;share/DUAV/hook/ament_prefix_path.ps1
-source;share/DUAV/hook/ament_prefix_path.dsv
-source;share/DUAV/hook/ament_prefix_path.sh
