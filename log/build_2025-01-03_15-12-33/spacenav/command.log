@@ -1,2 +1,0 @@
-Invoking command in '/home/step/ros2_DUAV/build/spacenav': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/step/ros2_DUAV/src/joystick_drivers/spacenav -DCMAKE_INSTALL_PREFIX=/home/step/ros2_DUAV/install/spacenav
-Invoked command in '/home/step/ros2_DUAV/build/spacenav' returned '1': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/step/ros2_DUAV/src/joystick_drivers/spacenav -DCMAKE_INSTALL_PREFIX=/home/step/ros2_DUAV/install/spacenav

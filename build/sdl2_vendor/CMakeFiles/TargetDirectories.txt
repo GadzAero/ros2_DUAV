@@ -1,9 +1,0 @@
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/uninstall.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/sdl2_vendor_uninstall.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/test.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/edit_cache.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/rebuild_cache.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/list_install_components.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/install.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/install/local.dir
-/home/step/ros2_DUAV/build/sdl2_vendor/CMakeFiles/install/strip.dir
