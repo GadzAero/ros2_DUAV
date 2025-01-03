@@ -6,6 +6,7 @@ Par contre quand tu push tes codes, fait bien attentions à ne pas détruire ceu
 Enfin, si tu es la pour utiliser ros, commence par ne pas oublier de faire, à la racine :
 
 colcon build
+
 source install/setup.bash
 
 Bonne chance =)
