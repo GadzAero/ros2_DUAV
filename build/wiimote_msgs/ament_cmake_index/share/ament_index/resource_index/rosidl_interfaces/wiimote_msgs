@@ -1,0 +1,6 @@
+msg/IrSourceInfo.idl
+msg/IrSourceInfo.msg
+msg/State.idl
+msg/State.msg
+msg/TimedSwitch.idl
+msg/TimedSwitch.msg

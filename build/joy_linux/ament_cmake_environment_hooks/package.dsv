@@ -1,0 +1,4 @@
+source;share/joy_linux/local_setup.bash
+source;share/joy_linux/local_setup.dsv
+source;share/joy_linux/local_setup.sh
+source;share/joy_linux/local_setup.zsh

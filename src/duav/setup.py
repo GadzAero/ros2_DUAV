@@ -18,7 +18,6 @@ setup(
     maintainer_email='binon.stepane@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'write_MAV = duav.write_MAV:main',

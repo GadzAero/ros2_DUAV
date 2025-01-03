@@ -1,0 +1,8 @@
+source;share/sdl2_vendor/hook/cmake_prefix_path.ps1
+source;share/sdl2_vendor/hook/cmake_prefix_path.dsv
+source;share/sdl2_vendor/hook/cmake_prefix_path.sh
+source;share/sdl2_vendor/local_setup.bash
+source;share/sdl2_vendor/local_setup.dsv
+source;share/sdl2_vendor/local_setup.ps1
+source;share/sdl2_vendor/local_setup.sh
+source;share/sdl2_vendor/local_setup.zsh

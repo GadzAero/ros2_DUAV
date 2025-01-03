@@ -1,0 +1,14 @@
+/home/step/ros2_DUAV/build/joy/CMakeFiles/uninstall.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/joy_uninstall.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/joy.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/joy_node.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/game_controller.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/game_controller_node.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/joy_enumerate_devices.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/test.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/edit_cache.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/rebuild_cache.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/list_install_components.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/install.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/install/local.dir
+/home/step/ros2_DUAV/build/joy/CMakeFiles/install/strip.dir

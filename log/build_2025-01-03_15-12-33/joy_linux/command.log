@@ -1,0 +1,1 @@
+Invoking command in '/home/step/ros2_DUAV/build/joy_linux': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/step/ros2_DUAV/src/joystick_drivers/joy_linux -DCMAKE_INSTALL_PREFIX=/home/step/ros2_DUAV/install/joy_linux

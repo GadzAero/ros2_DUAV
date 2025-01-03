@@ -1,0 +1,17 @@
+[1.156s] Invoking command in '/home/step/ros2_DUAV/src/ps4_controllers': PYTHONPATH=/home/step/ros2_DUAV/build/ps4_controllers/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/step/ros2_DUAV/install/ps4_controllers/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/ps4_controllers build --build-base /home/step/ros2_DUAV/build/ps4_controllers/build install --record /home/step/ros2_DUAV/build/ps4_controllers/install.log --single-version-externally-managed install_data
+[1.518s] running egg_info
+[1.541s] writing ../../build/ps4_controllers/ps4_controllers.egg-info/PKG-INFO
+[1.542s] writing dependency_links to ../../build/ps4_controllers/ps4_controllers.egg-info/dependency_links.txt
+[1.543s] writing entry points to ../../build/ps4_controllers/ps4_controllers.egg-info/entry_points.txt
+[1.543s] writing requirements to ../../build/ps4_controllers/ps4_controllers.egg-info/requires.txt
+[1.543s] writing top-level names to ../../build/ps4_controllers/ps4_controllers.egg-info/top_level.txt
+[1.588s] reading manifest file '../../build/ps4_controllers/ps4_controllers.egg-info/SOURCES.txt'
+[1.590s] writing manifest file '../../build/ps4_controllers/ps4_controllers.egg-info/SOURCES.txt'
+[1.590s] running build
+[1.590s] running build_py
+[1.590s] copying ps4_controllers/ps4_controller_1.py -> /home/step/ros2_DUAV/build/ps4_controllers/build/lib/ps4_controllers
+[1.590s] copying ps4_controllers/__init__.py -> /home/step/ros2_DUAV/build/ps4_controllers/build/lib/ps4_controllers
+[1.591s] running install
+[1.596s] running install_lib
+[1.626s] running install_data
+[1.627s] error: can't copy 'resource/ps4_controllers': doesn't exist or not a regular file

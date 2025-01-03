@@ -1,0 +1,17 @@
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/cmake/Modules/Findsdl2_custom.cmake
+/home/step/ros2_DUAV/install/sdl2_vendor/share/ament_index/resource_index/package_run_dependencies/sdl2_vendor
+/home/step/ros2_DUAV/install/sdl2_vendor/share/ament_index/resource_index/parent_prefix_path/sdl2_vendor
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/environment/ament_prefix_path.sh
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/environment/ament_prefix_path.dsv
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/environment/path.sh
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/environment/path.dsv
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/local_setup.bash
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/local_setup.sh
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/local_setup.zsh
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/local_setup.dsv
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/package.dsv
+/home/step/ros2_DUAV/install/sdl2_vendor/share/ament_index/resource_index/packages/sdl2_vendor
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/cmake/sdl2_vendor-extras.cmake
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/cmake/sdl2_vendorConfig.cmake
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/cmake/sdl2_vendorConfig-version.cmake
+/home/step/ros2_DUAV/install/sdl2_vendor/share/sdl2_vendor/package.xml

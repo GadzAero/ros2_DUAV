@@ -1,0 +1,163 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from wiimote_msgs/msg/State.msg
+// generated code does not contain a copyright notice
+
+#include "builtin_interfaces/msg/Time.idl"
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+#include "wiimote_msgs/msg/IrSourceInfo.idl"
+
+module wiimote_msgs {
+  module msg {
+    typedef double double__9[9];
+    typedef float float__2[2];
+    typedef boolean boolean__11[11];
+    typedef boolean boolean__2[2];
+    typedef boolean boolean__4[4];
+    module State_Constants {
+      @verbatim (language="comment", text=
+        "Note: For ease of manipulation this message often uses" "\n"        "      int8[] when a bit vector would work. One might" "\n"        "      wish to use uint8[], but then Python takes" "\n"        "      the respective structure as a string and disallows" "\n"        "      item assignment.")
+      const int8 INVALID = -1;
+      const float INVALID_FLOAT = -1.0;
+      const int8 MSG_BTN_1 = 0;
+      const int8 MSG_BTN_2 = 1;
+      const int8 MSG_BTN_A = 2;
+      const int8 MSG_BTN_B = 3;
+      const int8 MSG_BTN_PLUS = 4;
+      const int8 MSG_BTN_MINUS = 5;
+      const int8 MSG_BTN_LEFT = 6;
+      const int8 MSG_BTN_RIGHT = 7;
+      const int8 MSG_BTN_UP = 8;
+      const int8 MSG_BTN_DOWN = 9;
+      const int8 MSG_BTN_HOME = 10;
+      const int8 MSG_BTN_Z = 0;
+      const int8 MSG_BTN_C = 1;
+      const int8 MSG_CLASSIC_BTN_X = 0;
+      const int8 MSG_CLASSIC_BTN_Y = 1;
+      const int8 MSG_CLASSIC_BTN_A = 2;
+      const int8 MSG_CLASSIC_BTN_B = 3;
+      const int8 MSG_CLASSIC_BTN_PLUS = 4;
+      const int8 MSG_CLASSIC_BTN_MINUS = 5;
+      const int8 MSG_CLASSIC_BTN_LEFT = 6;
+      const int8 MSG_CLASSIC_BTN_RIGHT = 7;
+      const int8 MSG_CLASSIC_BTN_UP = 8;
+      const int8 MSG_CLASSIC_BTN_DOWN = 9;
+      const int8 MSG_CLASSIC_BTN_HOME = 10;
+      const int8 MSG_CLASSIC_BTN_L = 11;
+      const int8 MSG_CLASSIC_BTN_R = 12;
+      const int8 MSG_CLASSIC_BTN_ZL = 13;
+      const int8 MSG_CLASSIC_BTN_ZR = 14;
+    };
+    @verbatim (language="comment", text=
+      "Wiimote State message containing one complete Wiimote state")
+    struct State {
+      @verbatim (language="comment", text=
+        "-----------------------------" "\n"
+        " Header" "\n"
+        "----------------------")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Gyro reading" "\n"
+        "-----------------------------" "\n"
+        " In radians/sec. If reading is invalid," "\n"
+        " for instance b/c no gyro is attached to the Wii, then" "\n"
+        " set first element of covariance to -1 (same as imu_data.msg):" "\n"
+        " Covariance matrix (roll, pitch, yaw) in radians^2/sec^2.")
+      geometry_msgs::msg::Vector3 angular_velocity_zeroed;
+
+      geometry_msgs::msg::Vector3 angular_velocity_raw;
+
+      double__9 angular_velocity_covariance;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Accelerometer reading" "\n"
+        "-----------------------------" "\n"
+        " Acceleration in m/sec^2. Covariance matrix" "\n"
+        " (x,y,z) in m^2/sec^4.  (all same as imu_data.msg)")
+      geometry_msgs::msg::Vector3 linear_acceleration_zeroed;
+
+      geometry_msgs::msg::Vector3 linear_acceleration_raw;
+
+      double__9 linear_acceleration_covariance;
+
+      @verbatim (language="comment", text=
+        "------------------------------" "\n"
+        " Nunchuk Accelerometer reading" "\n"
+        "------------------------------")
+      geometry_msgs::msg::Vector3 nunchuk_acceleration_zeroed;
+
+      geometry_msgs::msg::Vector3 nunchuk_acceleration_raw;
+
+      @verbatim (language="comment", text=
+        "-----------------" "\n"
+        " Nunchuk Joystick" "\n"
+        "-----------------")
+      float__2 nunchuk_joystick_zeroed;
+
+      float__2 nunchuk_joystick_raw;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Wiimote buttons" "\n"
+        "-----------------------------" "\n"
+        " Mappings from Wiimote button name" "\n"
+        " to array position are defined above.")
+      boolean__11 buttons;
+
+      boolean__2 nunchuk_buttons;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Wiimote LED states:" "\n"
+        "-----------------------------")
+      boolean__4 leds;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Wiimote Rumble" "\n"
+        "-----------------------------" "\n"
+        " State (True or False)")
+      boolean rumble;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " IR Light sensor (Camera)" "\n"
+        "-----------------------------" "\n"
+        " The Wiimote handles up to four light sources," "\n"
+        " and the wiimote_controller software is written to" "\n"
+        " that limit as well. For future expansion" "\n"
+        " we make the following array extensible, rather" "\n"
+        " than locking its length down to four:")
+      sequence<wiimote_msgs::msg::IrSourceInfo> ir_tracking;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Wiimote battery" "\n"
+        "-----------------------------" "\n"
+        " A battery reading consists of two numbers:" "\n"
+        " the battery percentage, and the raw reading." "\n"
+        " Maximum battery is 208 units (unknown how this" "\n"
+        " relates to electrical properties):")
+      float raw_battery;
+
+      float percent_battery;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Time of most recent zeroing:" "\n"
+        "-----------------------------")
+      builtin_interfaces::msg::Time zeroing_time;
+
+      @verbatim (language="comment", text=
+        "----------------------" "\n"
+        " Error vector" "\n"
+        "-----------------------------" "\n"
+        " For error condition definitions see wiimoteConstants.py" "\n"
+        " Value of zero means all is well. (Currently NOT used).")
+      uint64 errors;
+    };
+  };
+};

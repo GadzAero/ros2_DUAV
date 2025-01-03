@@ -1,0 +1,2 @@
+[console_scripts]
+ps4_controller_1 = ps4_controllers.ps4_controller_1:main

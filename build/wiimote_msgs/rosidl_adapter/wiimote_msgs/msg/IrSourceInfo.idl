@@ -1,0 +1,34 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from wiimote_msgs/msg/IrSourceInfo.msg
+// generated code does not contain a copyright notice
+
+
+module wiimote_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "Sensor data pertaining to the Wiimote infrared camera." "\n"
+      "This message contains data for one of the four infrared" "\n"
+      "light sources that the camera detects." "\n"
+      "" "\n"
+      "Each light is specified with a 2D position and" "\n"
+      "a 'source magnitude' (ir_size). If the x dimension" "\n"
+      "is set to INVALID_FLOAT, then no light was detected for" "\n"
+      "the respective light. The Wiimote handles up to" "\n"
+      "four light sources, and the wiimote_controller software" "\n"
+      "is written to that limit as well." "\n"
+      "" "\n"
+      "I am unsure what the 'ir_size' values represent." "\n"
+      "They are described as 'source magnitude' in some places. I" "\n"
+      "*assume* this is signal amplitude, but it's unclear." "\n"
+      "Note that current lowest level cwiid driver does not" "\n"
+      "seem to pass the ir_size value to the cwiid Wiimote.c." "\n"
+      "For now this size will therefore be set INVALID")
+    struct IrSourceInfo {
+      double x;
+
+      double y;
+
+      int64 ir_size;
+    };
+  };
+};

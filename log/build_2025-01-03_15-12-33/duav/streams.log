@@ -1,0 +1,40 @@
+[1.337s] Invoking command in '/home/step/ros2_DUAV/src/duav': PYTHONPATH=/home/step/ros2_DUAV/build/duav/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/step/ros2_DUAV/install/duav/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/duav build --build-base /home/step/ros2_DUAV/build/duav/build install --record /home/step/ros2_DUAV/build/duav/install.log --single-version-externally-managed install_data
+[1.579s] /home/step/.local/lib/python3.10/site-packages/setuptools/_distutils/dist.py:261: UserWarning: Unknown distribution option: 'tests_require'
+[1.579s]   warnings.warn(msg)
+[1.721s] running egg_info
+[1.749s] writing ../../build/duav/duav.egg-info/PKG-INFO
+[1.750s] writing dependency_links to ../../build/duav/duav.egg-info/dependency_links.txt
+[1.750s] writing entry points to ../../build/duav/duav.egg-info/entry_points.txt
+[1.750s] writing requirements to ../../build/duav/duav.egg-info/requires.txt
+[1.751s] writing top-level names to ../../build/duav/duav.egg-info/top_level.txt
+[1.807s] reading manifest file '../../build/duav/duav.egg-info/SOURCES.txt'
+[1.811s] writing manifest file '../../build/duav/duav.egg-info/SOURCES.txt'
+[1.811s] running build
+[1.811s] running build_py
+[1.812s] copying duav/create_path.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.813s] copying duav/determine_plane_state.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.813s] copying duav/__init__.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.813s] copying duav/pub_MAV.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.814s] copying duav/select_mission_type.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.814s] copying duav/create_costmap.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.815s] copying duav/analyse_CAM.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.815s] copying duav/write_MAV.py -> /home/step/ros2_DUAV/build/duav/build/lib/duav
+[1.815s] running install
+[1.824s] running install_lib
+[1.861s] running install_data
+[1.861s] copying resource/duav -> /home/step/ros2_DUAV/install/duav/share/ament_index/resource_index/packages
+[1.861s] copying package.xml -> /home/step/ros2_DUAV/install/duav/share/duav
+[1.862s] copying launch/launch_all.launch.py -> /home/step/ros2_DUAV/install/duav/share/duav
+[1.862s] running install_egg_info
+[1.899s] removing '/home/step/ros2_DUAV/install/duav/lib/python3.10/site-packages/duav-0.0.0-py3.10.egg-info' (and everything under it)
+[1.900s] Copying ../../build/duav/duav.egg-info to /home/step/ros2_DUAV/install/duav/lib/python3.10/site-packages/duav-0.0.0-py3.10.egg-info
+[1.901s] running install_scripts
+[2.115s] Installing analyse_CAM script to /home/step/ros2_DUAV/install/duav/lib/duav
+[2.115s] Installing create_costmap script to /home/step/ros2_DUAV/install/duav/lib/duav
+[2.115s] Installing create_path script to /home/step/ros2_DUAV/install/duav/lib/duav
+[2.116s] Installing determine_plane_state script to /home/step/ros2_DUAV/install/duav/lib/duav
+[2.116s] Installing pub_MAV script to /home/step/ros2_DUAV/install/duav/lib/duav
+[2.116s] Installing select_mission_type script to /home/step/ros2_DUAV/install/duav/lib/duav
+[2.116s] Installing write_MAV script to /home/step/ros2_DUAV/install/duav/lib/duav
+[2.117s] writing list of installed files to '/home/step/ros2_DUAV/build/duav/install.log'
+[2.169s] Invoked command in '/home/step/ros2_DUAV/src/duav' returned '0': PYTHONPATH=/home/step/ros2_DUAV/build/duav/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/step/ros2_DUAV/install/duav/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/duav build --build-base /home/step/ros2_DUAV/build/duav/build install --record /home/step/ros2_DUAV/build/duav/install.log --single-version-externally-managed install_data
