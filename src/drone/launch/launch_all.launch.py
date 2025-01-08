@@ -5,33 +5,33 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     node_analyse_CAM = Node(
-        package='duav',
+        package='drone',
         executable='analyse_CAM',
     )
 
     node_write_MAV = Node(
-        package='duav',
+        package='drone',
         executable='write_MAV',
     )
     node_pub_MAV = Node(
-        package='duav',
+        package='drone',
         executable='pub_MAV',
     )
 
     node_select_mission_type = Node(
-        package='duav',
+        package='drone',
         executable='select_mission_type',
     )
     node_determine_plane_state = Node(
-        package='duav',
+        package='drone',
         executable='determine_plane_state',
     )
     node_create_path = Node(
-        package='duav',
+        package='drone',
         executable='create_path',
     )
     node_create_costmap = Node(
-        package='duav',
+        package='drone',
         executable='create_costmap',
     )
 

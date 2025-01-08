@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 from glob import glob
 
-package_name = 'duav'
+package_name = 'drone'
 
 setup(
     name=package_name,
@@ -20,13 +20,13 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'write_MAV = duav.write_MAV:main',
-            'pub_MAV = duav.pub_MAV:main',
-            'create_path = duav.create_path:main',
-            'analyse_CAM = duav.analyse_CAM:main',
-            'determine_plane_state = duav.determine_plane_state:main',
-            'select_mission_type = duav.select_mission_type:main',
-            'create_costmap = duav.create_costmap:main',
+            'write_MAV = drone.write_MAV:main',
+            'pub_MAV = drone.pub_MAV:main',
+            'create_path = drone.create_path:main',
+            'analyse_CAM = drone.analyse_CAM:main',
+            'determine_plane_state = drone.determine_plane_state:main',
+            'select_mission_type = drone.select_mission_type:main',
+            'create_costmap = drone.create_costmap:main',
         ],
     },
 )
