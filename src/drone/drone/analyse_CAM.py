@@ -24,7 +24,7 @@ class AnalyseCAM(Node):
         msg = String()
         msg.data = "MAV Status: Active"
         self.publisher_1.publish(msg)
-        self.get_logger().info(f"Publishing: '{msg.data}'")
+        self.get_logger().debug(f"Publishing: '{msg.data}'")
 
 
 def main(args=None):

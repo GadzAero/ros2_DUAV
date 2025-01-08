@@ -25,10 +25,10 @@ class DeterminePlaneState(Node):
         msg = String()
         msg.data = "MAV Status: Active"
         self.publisher_.publish(msg)
-        self.get_logger().info(f"Publishing: '{msg.data}'")
+        self.get_logger().debug(f"Publishing: '{msg.data}'")
         
     def listener_callback_1(self, msg):
-        self.get_logger().info(f"Received: '{msg.data}'")
+        self.get_logger().debug(f"Received: '{msg.data}'")
 
 
 def main(args=None):

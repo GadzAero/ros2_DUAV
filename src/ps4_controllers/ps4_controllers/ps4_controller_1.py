@@ -16,13 +16,16 @@ class PS4ControllerNode(Node):
         self.pub = self.create_publisher(Twist, 'OUT/cmd_vel', 10)
         # Create a publisher for the PS button state
         self.ps_pub = self.create_publisher(Bool, 'OUT/ps_button_state', 10)
+        # Create publishers for the Share and Options button states
+        self.share_pub = self.create_publisher(Bool, 'OUT/share_button_state', 10)
+        self.options_pub = self.create_publisher(Bool, 'OUT/options_button_state', 10)
 
         self.get_logger().info("PS4 Controller -1- Node is running...")
 
     def joy_callback_1(self, msg):
         # Log the buttons and axes values
-        self.get_logger().info(f"Controller 1 - Buttons: {msg.buttons}")
-        self.get_logger().info(f"Controller 1 - Axes: {msg.axes}")
+        self.get_logger().debug(f"Controller 1 - Buttons: {msg.buttons}")
+        self.get_logger().debug(f"Controller 1 - Axes: {msg.axes}")
 
         # Create a Twist message and set its values based on the joystick input
         twist = Twist()
@@ -34,12 +37,20 @@ class PS4ControllerNode(Node):
         # Publish the Twist message to control the drone
         self.pub.publish(twist)
 
-        # Check the state of the PS button (assuming it's the 12th button)
+        # Check the state of the PS button 
         ps_button_state = Bool()
         ps_button_state.data = msg.buttons[10] == 1
-
-        # Publish the PS button state
         self.ps_pub.publish(ps_button_state)
+
+        # Check the state of the Share button 
+        share_button_state = Bool()
+        share_button_state.data = msg.buttons[8] == 1
+        self.share_pub.publish(share_button_state)
+
+        # Check the state of the Options button 
+        options_button_state = Bool()
+        options_button_state.data = msg.buttons[9] == 1
+        self.options_pub.publish(options_button_state)
 
 def main(args=None):
     # Initialize the ROS client library
