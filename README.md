@@ -6,7 +6,8 @@ Par contre quand tu push tes codes, fait bien attentions à ne pas détruire ceu
 Enfin, si tu es la pour utiliser ros, commence par ne pas oublier de faire, à la racine :
 
 colcon build
-
 source install/setup.bash
 
-Bonne chance =)
+Voici ensuite quelques lien mavlink utiles :
+ - https://mavlink.io/en/messages/common.html#RC_CHANNELS_OVERRIDE
+ - https://www.ardusub.com/developers/pymavlink.html#send-rc-joystick
