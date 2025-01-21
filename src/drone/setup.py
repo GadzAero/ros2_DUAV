@@ -27,6 +27,7 @@ setup(
             'determine_plane_state = drone.determine_plane_state:main',
             'select_mission_type = drone.select_mission_type:main',
             'create_costmap = drone.create_costmap:main',
+            'test = drone.test:main',
         ],
     },
 )

@@ -11,3 +11,7 @@ source install/setup.bash
 Voici ensuite quelques lien mavlink utiles :
  - https://mavlink.io/en/messages/common.html#RC_CHANNELS_OVERRIDE
  - https://www.ardusub.com/developers/pymavlink.html#send-rc-joystick
+
+Et voici qq lien MAVROS importants :
+ - https://masoudir.github.io/mavros_tutorial/
+ 
