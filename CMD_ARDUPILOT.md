@@ -5,6 +5,8 @@ Lancer un SITL
  - sim_vehicle.py -v ArduCopter --map --console
 Ou pour pas etre encombré :
  - sim_vehicle.py -v ArduCopter
+A BDX:
+ - sim_vehicle.py -v ArduCopter
 Sans Mavproxy
  - sim_vehicle.py -v ArduCopter --no-mavproxy
 Pour en lancer 2 :

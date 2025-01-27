@@ -16,5 +16,3 @@ Si tu rencontre un pb lors de l'installation install_geographiclib_datasets.sh, 
  - sudo bash install_geographiclib_datasets.sh
 puis continue normalement
 
-Pour lancer le noeud mavros avec un APM (ardupilot) :
- - ros2 launch mavros apm.launch fcu_url:="tcp://127.0.0.1:5762"

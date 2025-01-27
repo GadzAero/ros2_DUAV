@@ -35,3 +35,7 @@ Accès à l'outil de manière générale :
 
 ## UTILISATION DE NOTRE CODE
  - /home/step/ros2_DUAV/test1.waypoints
+
+## MAVROS
+Pour lancer le noeud mavros avec un APM (ardupilot) :
+ - ros2 launch mavros apm.launch fcu_url:="tcp://127.0.0.1:5762"
