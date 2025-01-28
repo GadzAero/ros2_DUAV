@@ -9,24 +9,12 @@ def generate_launch_description():
         executable='analyse_CAM',
     )
 
-    # node_write_MAV = Node(
-    #     package='drone',
-    #     executable='write_MAV',
-    # )
-
     node_MAV_manager = Node(
         package='drone',
         executable='MAV_manager',
     )
 
-    # node_send_fire_coor = Node(
-    #     package='drone',
-    #     executable='send_fire_coor',
-    # )
-
     ld.add_action(node_analyse_CAM)
-    # ld.add_action(node_write_MAV)
-    # ld.add_action(node_send_fire_coor)
     ld.add_action(node_MAV_manager)
 
     return ld

@@ -1,10 +1,10 @@
-# *CMD UTILES POUR ROS2*
+# CMD UTILES POUR ROS2
 
 ## PAKAGES
 Préparer un pkg python (se metre dans src !) :
  - ros2 pkg create name_to_enter --build-type ament_python
 
-## *COMPILER LE CODE ROS2*
+## COMPILER LE CODE ROS2
 Pour compiler le code :
  - colcon build
 Pour sourcer le code :
@@ -15,19 +15,19 @@ Les 2 d'affilé :
 Pour eviter les pkg longs :
  - colcon build --packages-skip mavlink mavros
 
-## *NODES*
+## NODES
  - ros2 run _pkg node_
  - ros2 node list
 
-## *TOPICS*
+## TOPICS
  - ros2 topic list
  - ros2 topic echo
 
-## *LAUNCH*
+## LAUNCH
 Permet de lancer un ensemble de _nodes_. Attention, les fichiers launch nécéssitent une extension xxx.launch.py pour être reconnu, en plus d'être annoncés dans le _setup.py_.
  - ros2 launch _pgk launch\_file\_name_
 
-## *RQT*
+## RQT
 Graph architectural :
  - rqt_graph
 Accès à l'outil de manière générale :

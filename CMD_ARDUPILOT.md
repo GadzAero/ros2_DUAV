@@ -1,6 +1,11 @@
-# *CMD UTILES POUR ARDUPILOT*
+# CMD UTILES POUR ARDUPILOT
 
 ## LANCER UNE SIMU
+Pour installer ArduPilot sur Linux en "home" (https://ardupilot.org/dev/docs/building-setup-linux.html#building-setup-linux):
+ - git clone  --recurse-submodules https://github.com/ArduPilot/ardupilot.git
+Puis exctuez dans le fichier ardupilot qui vient d'appraitre :
+ - Tools/environment_install/install-prereqs-ubuntu.sh -y
+ - . ~/.profile (puis lot out pour appliquer les chgmts)
 Lancer un SITL
  - sim_vehicle.py -v ArduCopter --map --console
 Ou pour pas etre encombré :
