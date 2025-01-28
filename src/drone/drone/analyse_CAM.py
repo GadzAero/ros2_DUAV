@@ -8,16 +8,19 @@ class AnalyseCAM(Node):
     def __init__(self):
         super().__init__('analyse_CAM')
         
-        self.publisher_GPS_coor_fire = self.create_publisher(GeoPoint, 'IN/CAM/GPS_coor_fire', 10)
-        self.timer = self.create_timer(1.0, self.tc_GPS_coor_fire)  # 1 second interval
-        self.get_logger().info("Publisher Node Started")
+        self.publisher_GPS_coor_fire = self.create_publisher(GeoPoint, 'OUT/GPS_fire_coor', 10)
+        self.timer = self.create_timer(0.1, self.tc_GPS_fire_coor)  # 1 second interval
+
+        self.subscription_GPS_popeye_coor = self.create_subscription(GeoPoint, 'OUT/GPS_popeye_coor', self.lc_GPS_popeye_coor, 10)
 
         # Pour les tests
         self.latitude = 44.8054141
         self.longitude = -0.6153083
         self.altitude = 11.93
+
+        self.get_logger().info("NODE analyse_cam STARTED.")
         
-    def tc_GPS_coor_fire(self):
+    def tc_GPS_fire_coor(self):
         # Création du message GPSData
         gps_message = GeoPoint()
         gps_message.latitude = self.latitude
@@ -26,7 +29,10 @@ class AnalyseCAM(Node):
 
         # Publication
         self.publisher_GPS_coor_fire.publish(gps_message)
-        self.get_logger().info(f"Published: Latitude={gps_message.latitude}, Longitude={gps_message.longitude}, Altitude={gps_message.altitude}")
+        # self.get_logger().info(f"Published: Latitude={gps_message.latitude}, Longitude={gps_message.longitude}, Altitude={gps_message.altitude}")
+
+    def lc_GPS_popeye_coor(self, GPS_popeye_coor):
+        pass
 
 def main(args=None):
     rclpy.init(args=args)

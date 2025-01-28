@@ -23,6 +23,7 @@ setup(
             'write_MAV = drone.write_MAV:main',
             'analyse_CAM = drone.analyse_CAM:main',
             'send_fire_coor = drone.send_fire_coor:main',
+            'MAV_manager = drone.MAV_manager:main',
         ],
     },
 )
