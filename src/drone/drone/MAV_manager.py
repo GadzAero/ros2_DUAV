@@ -8,7 +8,7 @@ from pymavlink import mavutil
 
 class MAVManager(Node):
     def __init__(self):
-        super().__init__('MAV_manager')
+        super().__init__('MAV_manager', namespace='OLIVE')
 
         # Connexion à MAVLink
         try:
@@ -27,8 +27,8 @@ class MAVManager(Node):
         self.subscription_GPS_fire_coor = self.create_subscription(GeoPoint, 'OUT/GPS_fire_coor', self.lc_GPS_fire_coor, 10)
         
         ### IN MAV
-        self.publisher_GPS_popeye_coor = self.create_publisher(GeoPoint, 'IN/GPS_popeye_coor', 10)
-        self.timer = self.create_timer(1.0, self.tc_GPS_popeye_coor)
+        self.publisher_GPS_olive_coor = self.create_publisher(GeoPoint, 'IN/GPS_olive_coor', 10)
+        self.timer = self.create_timer(1.0, self.tc_GPS_olive_coor)
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
@@ -48,7 +48,7 @@ class MAVManager(Node):
         # Log that the message was sent
         # self.get_logger().info("GPS coordinates sent as a STATUSTEXT message")
 
-    def tc_GPS_popeye_coor(self):
+    def tc_GPS_olive_coor(self):
         try:
             # Wait for the GLOBAL_POSITION_INT message
             msg = self.mavlink_connection.recv_match(type='GLOBAL_POSITION_INT', blocking=False)
@@ -65,7 +65,7 @@ class MAVManager(Node):
                 geopoint_msg.altitude = altitude
 
                 # Publish the GeoPoint message
-                self.publisher_GPS_popeye_coor.publish(geopoint_msg)
+                self.publisher_GPS_olive_coor.publish(geopoint_msg)
                 self.get_logger().info(f"Published global position: Lat={latitude:.6f}, Lon={longitude:.6f}, Alt={altitude:.2f}m")
         except Exception as e:
             self.get_logger().error(f"Failed to read or publish global position: {str(e)}")
