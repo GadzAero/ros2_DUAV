@@ -6,12 +6,12 @@ from geographic_msgs.msg import GeoPoint
 
 class AnalyseCAM(Node):
     def __init__(self):
-        super().__init__('analyse_CAM')
+        super().__init__('analyse_CAM', namespace='OLIVE')
         
         self.publisher_GPS_coor_fire = self.create_publisher(GeoPoint, 'OUT/GPS_fire_coor', 10)
         self.timer = self.create_timer(0.1, self.tc_GPS_fire_coor)  # 1 second interval
 
-        self.subscription_GPS_popeye_coor = self.create_subscription(GeoPoint, 'OUT/GPS_popeye_coor', self.lc_GPS_popeye_coor, 10)
+        self.subscription_GPS_olive_coor = self.create_subscription(GeoPoint, 'IN/GPS_olive_coor', self.lc_GPS_olive_coor, 10)
 
         # Pour les tests
         self.latitude = 44.8054141
@@ -31,7 +31,7 @@ class AnalyseCAM(Node):
         self.publisher_GPS_coor_fire.publish(gps_message)
         # self.get_logger().info(f"Published: Latitude={gps_message.latitude}, Longitude={gps_message.longitude}, Altitude={gps_message.altitude}")
 
-    def lc_GPS_popeye_coor(self, GPS_popeye_coor):
+    def lc_GPS_olive_coor(self, GPS_olive_coor):
         pass
 
 def main(args=None):
