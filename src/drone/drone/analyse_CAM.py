@@ -2,19 +2,24 @@
 
 import rclpy
 from rclpy.node import Node
-from custom_msgs.msg import GPSData
+from geographic_msgs.msg import GeoPoint
 
 class AnalyseCAM(Node):
     def __init__(self):
         super().__init__('analyse_CAM')
         
-        self.publisher_GPS_coor_fire = self.create_publisher(GPSData, 'IN/CAM/GPS_coor_fire', 10)
-        self.timer = self.create_timer(1.0, self.timer_callback)  # 1 second interval
+        self.publisher_GPS_coor_fire = self.create_publisher(GeoPoint, 'IN/CAM/GPS_coor_fire', 10)
+        self.timer = self.create_timer(1.0, self.tc_GPS_coor_fire)  # 1 second interval
         self.get_logger().info("Publisher Node Started")
+
+        # Pour les tests
+        self.latitude = 44.8054141
+        self.longitude = -0.6153083
+        self.altitude = 11.93
         
     def tc_GPS_coor_fire(self):
         # Création du message GPSData
-        gps_message = GPSData()
+        gps_message = GeoPoint()
         gps_message.latitude = self.latitude
         gps_message.longitude = self.longitude
         gps_message.altitude = self.altitude
