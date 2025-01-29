@@ -12,14 +12,14 @@ class MAVManager(Node):
 
         # Connexion à MAVLink
         try:
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762',source_system=1,source_component=2) 
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5964') 
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)
-            self.get_logger().info("En attente du heartbeat MAVLink...")
         except:
             self.get_logger().error("Impossible de se connecter à MAVLink")
         # finally:
             return
+        self.get_logger().info("En attente du heartbeat MAVLink...")
         self.mavlink_connection.wait_heartbeat()
         self.get_logger().info("Connexion MAVLink établie !")
 
