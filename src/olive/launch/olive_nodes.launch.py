@@ -5,12 +5,12 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     node_analyse_CAM = Node(
-        package='drone',
+        package='olive',
         executable='analyse_CAM',
     )
 
     node_MAV_manager = Node(
-        package='drone',
+        package='olive',
         executable='MAV_manager',
     )
 

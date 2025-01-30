@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 from glob import glob
 
-package_name = 'control_ground_station'
+package_name = 'olive'
 
 setup(
     name=package_name,
@@ -20,9 +20,8 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            # 'drone_menu_control = ihm.drone_menu_control:main',
-            'MAV_manager_popeye = control_ground_station.MAV_manager_popeye:main',
-            'MAV_manager_olive = control_ground_station.MAV_manager_olive:main',
+            'analyse_CAM = olive.analyse_CAM:main',
+            'MAV_manager = olive.MAV_manager:main',
         ],
     },
 )
