@@ -21,14 +21,6 @@ class MAVManagerPopeye(Node):
         self.mavlink_connection.wait_heartbeat()
         self.get_logger().info("Connexion MAVLink établie !")
         
-        self.mavlink_connection.mav.request_data_stream_send(
-            1,  # Target System ID
-            mavutil.mavlink.MAV_COMP_ID_ALL,  # Target Component ID
-            mavutil.mavlink.MAV_DATA_STREAM_ALL,  # Type de données
-            10,  # Fréquence de mise à jour (Hz)
-            1  # Activer le flux (0 pour désactiver)
-        )
-
         ### IN MAV
         self.subscription_GPS_fire_coor = self.create_subscription(GeoPoint, 'GPS_fire_coor', self.lc_GPS_fire_coor, 10)
 
