@@ -12,8 +12,8 @@ class MAVManager(Node):
 
         # Connexion à MAVLink
         try:
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5864') 
-            # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
+            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5864') 
+            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM1')
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)
         except:
             self.get_logger().error("Impossible de se connecter à MAVLink")

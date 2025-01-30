@@ -12,7 +12,7 @@ class MAVManager(Node):
 
         # Connexion à MAVLink
         try:
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5773', source_system=1, source_component=2) 
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762', source_system=1, source_component=2) 
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)
         except:
@@ -28,7 +28,7 @@ class MAVManager(Node):
         
         ### IN MAV
         self.publisher_GPS_olive_coor = self.create_publisher(GeoPoint, 'IN/GPS_olive_coor', 10)
-        # self.timer = self.create_timer(1.0, self.tc_GPS_olive_coor)
+        self.timer = self.create_timer(1.0, self.tc_GPS_olive_coor)
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
