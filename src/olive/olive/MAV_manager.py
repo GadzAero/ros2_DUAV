@@ -10,15 +10,12 @@ class MAVManager(Node):
     def __init__(self):
         super().__init__('MAV_manager', namespace='OLIVE')
 
-        # Connexion à MAVLink
         try:
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762', source_system=1, source_component=2) 
-            # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
-            # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)
-        except:
-            self.get_logger().error("Impossible de se connecter à MAVLink")
-        # finally:
-            return
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760', baud=115200)
+            # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM1', baud=115200)
+        except Exception as e:
+            self.get_logger().error(f"Erreur MAVLink : {e}")
+            raise RuntimeError("Impossible de se connecter à MAVLink.")
         self.get_logger().info("En attente du heartbeat MAVLink...")
         self.mavlink_connection.wait_heartbeat()
         self.get_logger().info("Connexion MAVLink établie !")
@@ -28,25 +25,20 @@ class MAVManager(Node):
         
         ### IN MAV
         self.publisher_GPS_olive_coor = self.create_publisher(GeoPoint, 'IN/GPS_olive_coor', 10)
-        self.timer = self.create_timer(1.0, self.tc_GPS_olive_coor)
+        self.timer = self.create_timer(0.1, self.tc_GPS_olive_coor)
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
     def lc_GPS_fire_coor(self, GPS_fire_coor):
-        # Log the received coordinates
-        self.get_logger().info(f"FIRE AT - Lat:{GPS_fire_coor.latitude} Lon:{GPS_fire_coor.longitude} Alt:{GPS_fire_coor.altitude}")
-        
-        # Format the coordinates into a string
-        status_msg = f"FIRE AT - Lat:{GPS_fire_coor.latitude} Lon:{GPS_fire_coor.longitude} Alt:{GPS_fire_coor.altitude}"
+        # Log the received coordinates (TEXTSTAUTS is limited to 50 char)
+        data = f"FIRE-Lat {GPS_fire_coor.latitude:.8f} Lon {GPS_fire_coor.longitude:.8f} Alt {GPS_fire_coor.altitude:.3f}"
+        self.get_logger().info(data)
         
         # Send the text message using STATUSTEXT
         self.mavlink_connection.mav.statustext_send(
             severity=mavutil.mavlink.MAV_SEVERITY_EMERGENCY,  # Severity level
-            text=status_msg.encode('utf-8')             # Message text, encoded as UTF-8
+            text=data.encode('utf-8')             # Message text, encoded as UTF-8
         )
-        
-        # Log that the message was sent
-        # self.get_logger().info("GPS coordinates sent as a STATUSTEXT message")
 
     def tc_GPS_olive_coor(self):
         try:
@@ -66,7 +58,7 @@ class MAVManager(Node):
 
                 # Publish the GeoPoint message
                 self.publisher_GPS_olive_coor.publish(geopoint_msg)
-                self.get_logger().info(f"Published global position: Lat={latitude:.6f}, Lon={longitude:.6f}, Alt={altitude:.2f}m")
+                self.get_logger().info(f"Published global position: Lat={latitude}, Lon={longitude}, Alt={altitude}m")
         except Exception as e:
             self.get_logger().error(f"Failed to read or publish global position: {str(e)}")
 

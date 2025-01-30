@@ -12,13 +12,11 @@ class MAVManagerPopeye(Node):
 
         # Connexion à MAVLink
         try:
-            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5864') 
-            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB2', baud=57600)
-            # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)
-        except:
-            self.get_logger().error("Impossible de se connecter à MAVLink")
-        # finally:
-            return
+            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)   
+        except Exception as e:
+            self.get_logger().error(f"Erreur MAVLink : {e}")
+            raise RuntimeError("Impossible de se connecter à MAVLink.")
         self.get_logger().info("En attente du heartbeat MAVLink...")
         self.mavlink_connection.wait_heartbeat()
         self.get_logger().info("Connexion MAVLink établie !")
@@ -28,8 +26,16 @@ class MAVManagerPopeye(Node):
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
-    def lc_GPS_fire_coor(self):
-        pass
+    def lc_GPS_fire_coor(self, GPS_fire_coor):
+        # Log the received coordinates
+        data = f"FIRE-Lat {GPS_fire_coor.latitude} Lon {GPS_fire_coor.longitude} Alt {GPS_fire_coor.altitude}"
+        self.get_logger().info('SEND > %s' % data)
+        
+        # Send the text message using STATUSTEXT
+        self.mavlink_connection.mav.statustext_send(
+            severity=mavutil.mavlink.MAV_SEVERITY_EMERGENCY,  # Severity level
+            text=data.encode('utf-8')             # Message text, encoded as UTF-8
+        )
 
 def main(args=None):
     rclpy.init(args=args)

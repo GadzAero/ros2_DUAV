@@ -12,44 +12,38 @@ class MAVManager(Node):
 
         # Connexion à MAVLink
         try:
-            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5864') 
-            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM1')
-            # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)
-        except:
-            self.get_logger().error("Impossible de se connecter à MAVLink")
-        # finally:
-            return
+            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM1', baud=115200)
+        except Exception as e:
+            self.get_logger().error(f"Erreur MAVLink : {e}")
+            raise RuntimeError("Impossible de se connecter à MAVLink.")
         self.get_logger().info("En attente du heartbeat MAVLink...")
         self.mavlink_connection.wait_heartbeat()
         self.get_logger().info("Connexion MAVLink établie !")
         
         ### IN MAV
         self.publisher_GPS_fire_coor = self.create_publisher(GeoPoint, 'IN/GPS_fire_coor', 10)
-        self.timer = self.create_timer(1.0, self.tc_GPS_fire_coor)
+        self.timer = self.create_timer(0.01, self.tc_GPS_fire_coor)
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
     def tc_GPS_fire_coor(self):
-        try:
-            # Wait for the GLOBAL_POSITION_INT message
-            msg = self.mavlink_connection.recv_match(type='GLOBAL_POSITION_INT', blocking=False)
-            if msg is not None:
-                # Extract global position data
-                latitude = msg.lat / 1e7  # Convert from 1E7 degrees to decimal degrees
-                longitude = msg.lon / 1e7  # Convert from 1E7 degrees to decimal degrees
-                altitude = msg.alt / 1000.0  # Convert from millimeters to meters
-
+        text_msg = self.mavlink_connection.recv_match()
+        # self.get_logger().info('RECEIVED > %s' % text_msg)
+        if not text_msg: # Obligatoire pour passer si c'est du bruit
+            return
+        if text_msg.get_type()=='STATUSTEXT':
+            self.get_logger().info('RECEIVED > %s' % text_msg.text)
+            if 'FIRE' in text_msg.text:
                 # Create a GeoPoint message
+                data = text_msg.text.split()
                 geopoint_msg = GeoPoint()
-                geopoint_msg.latitude = latitude
-                geopoint_msg.longitude = longitude
-                geopoint_msg.altitude = altitude
+                geopoint_msg.latitude = float(data[1])
+                geopoint_msg.longitude = float(data[3])
+                geopoint_msg.altitude = float(data[5])
 
                 # Publish the GeoPoint message
-                self.publisher_GPS_fire_coor.publish(geopoint_msg)
-                self.get_logger().info(f"Published global position: Lat={latitude:.6f}, Lon={longitude:.6f}, Alt={altitude:.2f}m")
-        except Exception as e:
-            self.get_logger().error(f"Failed to read or publish global position: {str(e)}")
+                self.publisher_GPS_fire_coor.publish(geopoint_msg)  
 
 def main(args=None):
     rclpy.init(args=args)

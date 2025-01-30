@@ -4,3 +4,9 @@ log/
 Olive/
 Popeye/
 terrain/
+logs/
+
+eeprom.bin
+mav.parm
+mav.tlog
+mav.tlog.raw

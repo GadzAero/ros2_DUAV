@@ -14,9 +14,9 @@ class AnalyseCAM(Node):
         self.subscription_GPS_olive_coor = self.create_subscription(GeoPoint, 'IN/GPS_olive_coor', self.lc_GPS_olive_coor, 10)
 
         # Pour les tests
-        self.latitude = 44.8054141
-        self.longitude = -0.6153083
-        self.altitude = 11.93
+        self.latitude = 0.
+        self.longitude = 0.
+        self.altitude = 0.
 
         self.get_logger().info("NODE analyse_cam STARTED.")
         
@@ -26,6 +26,11 @@ class AnalyseCAM(Node):
         gps_message.latitude = self.latitude
         gps_message.longitude = self.longitude
         gps_message.altitude = self.altitude
+
+        # Debug
+        self.latitude += 0.001
+        self.longitude += 0.001
+        self.altitude += 0.001
 
         # Publication
         self.publisher_GPS_coor_fire.publish(gps_message)
