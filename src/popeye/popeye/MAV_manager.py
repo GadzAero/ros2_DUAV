@@ -12,8 +12,8 @@ class MAVManager(Node):
 
         # Connexion à MAVLink
         try:
-            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760', baud=115200)
-            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM1', baud=115200)
+            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5780', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
             raise RuntimeError("Impossible de se connecter à MAVLink.")
@@ -28,9 +28,9 @@ class MAVManager(Node):
         self.get_logger().info("NODE MAV_manager STARTED.")
 
     def tc_GPS_fire_coor(self):
-        text_msg = self.mavlink_connection.recv_match()
-        # self.get_logger().info('RECEIVED > %s' % text_msg)
-        if not text_msg: # Obligatoire pour passer si c'est du bruit
+        text_msg = self.mavlink_connection.recv_match() #type="STATUSTEXT", blocking=False)
+        self.get_logger().info('RECEIVED > %s' % text_msg)
+        if text_msg is None: # Obligatoire pour passer si c'est du bruit
             return
         if text_msg.get_type()=='STATUSTEXT':
             self.get_logger().info('RECEIVED > %s' % text_msg.text)
