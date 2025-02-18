@@ -14,7 +14,11 @@ class MAVManagerOlive(Node):
 
         # Connexion à MAVLink
         try:
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5772', baud=115200)
+            # ADRUPILOT SITL
+            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5770', baud=115200)
+            # PX4 SITL
+            self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14031')
+            # RADIO
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)     
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")

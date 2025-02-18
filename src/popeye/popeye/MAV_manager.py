@@ -12,8 +12,12 @@ class MAVManager(Node):
 
         # Connexion à MAVLink
         try:
+            # ADRUPILOT SITL
             # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5780', baud=115200)
-            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
+            # PX4 SITL
+            self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14542')
+            # RADIO
+            # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
             raise RuntimeError("Impossible de se connecter à MAVLink.")
@@ -29,9 +33,9 @@ class MAVManager(Node):
             1  # Activer le flux (0 pour désactiver)
         )
         
-        ### IN MAV
+        ### IN/MAV
         self.publisher_GPS_fire_coor = self.create_publisher(GeoPoint, 'IN/GPS_fire_coor', 10)
-        self.timer = self.create_timer(0.5, self.tc_GPS_fire_coor)
+        self.timer = self.create_timer(0.5, self.tc_GPS_fire_coor) # timer_callback
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
