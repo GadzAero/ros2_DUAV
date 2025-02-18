@@ -11,7 +11,7 @@ class MAVManager(Node):
         super().__init__('MAV_manager', namespace='OLIVE')
 
         try:
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5760', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5770', baud=115200)
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM1', baud=115200)
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
@@ -58,7 +58,7 @@ class MAVManager(Node):
 
                 # Publish the GeoPoint message
                 self.publisher_GPS_olive_coor.publish(geopoint_msg)
-                self.get_logger().info(f"Published global position: Lat={latitude}, Lon={longitude}, Alt={altitude}m")
+                # self.get_logger().info(f"Published global position: Lat={latitude}, Lon={longitude}, Alt={altitude}m")
         except Exception as e:
             self.get_logger().error(f"Failed to read or publish global position: {str(e)}")
 

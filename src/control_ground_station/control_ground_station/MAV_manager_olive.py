@@ -14,7 +14,7 @@ class MAVManagerOlive(Node):
 
         # Connexion à MAVLink
         try:
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5772', baud=115200)
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)     
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
@@ -25,7 +25,7 @@ class MAVManagerOlive(Node):
                 
         ### OUT MAV
         self.publisher_GPS_fire_coor = self.create_publisher(GeoPoint, 'GPS_fire_coor', 10)
-        self.timer = self.create_timer(0.0001, self.tc_GPS_fire_coor)
+        self.timer = self.create_timer(0.1, self.tc_GPS_fire_coor)
 
         # Launch return from Olive
         # for i in range(1, 255):  # Pour toutes les cibles possibles
@@ -40,22 +40,20 @@ class MAVManagerOlive(Node):
         self.get_logger().info("NODE MAV_manager STARTED.")
 
     def tc_GPS_fire_coor(self):
-        text_msg = self.mavlink_connection.recv_match()
-        # self.get_logger().info('RECEIVED > %s' % text_msg)
-        if not text_msg: # Obligatoire pour passer si c'est du bruit
+        text_msg = self.mavlink_connection.recv_match(type="STATUSTEXT", blocking=False)
+        if text_msg is None: # Obligatoire pour passer si c'est du bruit
             return
-        if text_msg.get_type()=='STATUSTEXT':
-            self.get_logger().info('RECEIVED > %s' % text_msg.text)
-            if 'FIRE' in text_msg.text:
-                # Create a GeoPoint message
-                data = text_msg.text.split()
-                geopoint_msg = GeoPoint()
-                geopoint_msg.latitude = float(data[1])
-                geopoint_msg.longitude = float(data[3])
-                geopoint_msg.altitude = float(data[5])
+        self.get_logger().info('RECEIVED > %s' % text_msg.text)
+        if 'FIRE' in text_msg.text:
+            # Create a GeoPoint message
+            data = text_msg.text.split()
+            geopoint_msg = GeoPoint()
+            geopoint_msg.latitude = float(data[1])
+            geopoint_msg.longitude = float(data[3])
+            geopoint_msg.altitude = float(data[5])
 
-                # Publish the GeoPoint message
-                self.publisher_GPS_fire_coor.publish(geopoint_msg)        
+            # Publish the GeoPoint message
+            self.publisher_GPS_fire_coor.publish(geopoint_msg)        
 
 def main(args=None):
     rclpy.init(args=args)

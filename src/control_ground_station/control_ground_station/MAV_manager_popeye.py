@@ -12,8 +12,8 @@ class MAVManagerPopeye(Node):
 
         # Connexion à MAVLink
         try:
-            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762', baud=115200)
-            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', baud=57600)   
+            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5782', source_system=1, source_component=2, baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', source_system=1, source_component=2, baud=57600)   
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
             raise RuntimeError("Impossible de se connecter à MAVLink.")
