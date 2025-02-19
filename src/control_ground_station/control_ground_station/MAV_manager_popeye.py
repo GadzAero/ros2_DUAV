@@ -13,9 +13,9 @@ class MAVManagerPopeye(Node):
         # Connexion à MAVLink
         try:
             # ADRUPILOT SITL
-            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5782', source_system=1, source_component=2, baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5782', source_system=1, source_component=2, baud=115200)
             # PX4 SITL
-            self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14032', source_system=1, source_component=2)
+            # self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14032', source_system=1, source_component=2)
             # RADIO
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyUSB0', source_system=1, source_component=2, baud=57600)   
         except Exception as e:

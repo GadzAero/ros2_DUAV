@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+from geographic_msgs.msg import GeoPoint
+from interfaces.srv import TriggerArm
+
 import rclpy
 from rclpy.node import Node
-from geographic_msgs.msg import GeoPoint
 import pymavlink.dialects.v20.common as mavlink
 from pymavlink import mavutil
 
@@ -13,9 +15,9 @@ class MAVManager(Node):
         # Connexion à MAVLink
         try:
             # ADRUPILOT SITL
-            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5780', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5780', baud=115200)
             # PX4 SITL
-            self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14542')
+            # self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14542')
             # RADIO
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
         except Exception as e:
@@ -36,6 +38,9 @@ class MAVManager(Node):
         ### IN/MAV
         self.publisher_GPS_fire_coor = self.create_publisher(GeoPoint, 'IN/GPS_fire_coor', 10)
         self.timer = self.create_timer(0.5, self.tc_GPS_fire_coor) # timer_callback
+        
+        ### SERVICES
+        self.srv = self.create_service(TriggerArm, 'trigger_arm', self.arm)
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
@@ -54,6 +59,19 @@ class MAVManager(Node):
 
             # Publish the GeoPoint message
             self.publisher_GPS_fire_coor.publish(geopoint_msg)  
+
+    # Function to make Olive takeoff
+    def arm(self, request, response):
+        try:
+            self.mavlink_connection.arducopter_arm()
+            self.mavlink_connection.motors_armed_wait()
+            response.success = True
+        except Exception as e:
+            self.get_logger().error(f"Failed to takeoff: {str(e)}")
+            self.get_logger().info("Popeye ARM FAILED")
+            response.success = False
+        self.get_logger().info("Popeye ARMED")
+        return response
 
 def main(args=None):
     rclpy.init(args=args)

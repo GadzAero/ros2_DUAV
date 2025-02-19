@@ -1,0 +1,5 @@
+# Service to arm an UAV.
+
+int64 a
+---
+bool success   # indicate successful run of triggered service.

@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'MAV_manager = popeye.MAV_manager:main',
+            'ihm = popeye.ihm:main'
         ],
     },
 )
