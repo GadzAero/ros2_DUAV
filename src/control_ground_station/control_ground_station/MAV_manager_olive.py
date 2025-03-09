@@ -15,7 +15,7 @@ class MAVManagerOlive(Node):
         # Connexion à MAVLink
         try:
             # ADRUPILOT SITL
-            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5772', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5773', baud=115200)
             # PX4 SITL
             # self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14031')
             # RADIO

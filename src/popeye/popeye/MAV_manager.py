@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from geographic_msgs.msg import GeoPoint
-from interfaces.srv import TriggerArm
+# from interfaces.srv import TriggerArm
 
 import rclpy
 from rclpy.node import Node
@@ -40,7 +40,7 @@ class MAVManager(Node):
         self.timer = self.create_timer(0.5, self.tc_GPS_fire_coor) # timer_callback
         
         ### SERVICES
-        self.srv = self.create_service(TriggerArm, 'trigger_arm', self.arm)
+        # self.srv = self.create_service(TriggerArm, 'trigger_arm', self.arm)
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
@@ -61,17 +61,17 @@ class MAVManager(Node):
             self.publisher_GPS_fire_coor.publish(geopoint_msg)  
 
     # Function to make Olive takeoff
-    def arm(self, request, response):
-        try:
-            self.mavlink_connection.arducopter_arm()
-            self.mavlink_connection.motors_armed_wait()
-            response.success = True
-        except Exception as e:
-            self.get_logger().error(f"Failed to takeoff: {str(e)}")
-            self.get_logger().info("Popeye ARM FAILED")
-            response.success = False
-        self.get_logger().info("Popeye ARMED")
-        return response
+    # def arm(self, request, response):
+    #     try:
+    #         self.mavlink_connection.arducopter_arm()
+    #         self.mavlink_connection.motors_armed_wait()
+    #         response.success = True
+    #     except Exception as e:
+    #         self.get_logger().error(f"Failed to takeoff: {str(e)}")
+    #         self.get_logger().info("Popeye ARM FAILED")
+    #         response.success = False
+    #     self.get_logger().info("Popeye ARMED")
+    #     return response
 
 def main(args=None):
     rclpy.init(args=args)

@@ -12,9 +12,9 @@ class MAVManager(Node):
 
         try:
             # ADRUPILOT SITL
-            # self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5770', baud=115200)
+            self.mavlink_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5770', baud=115200)
             # PX4 SITL
-            self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14541')
+            # self.mavlink_connection = mavutil.mavlink_connection('udp:127.0.0.1:14541')
             # RADIO
             # self.mavlink_connection = mavutil.mavlink_connection('/dev/ttyACM1', baud=115200)
         except Exception as e:
