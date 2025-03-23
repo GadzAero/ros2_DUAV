@@ -1,20 +1,58 @@
 #!/usr/bin/env python3
 
 import sys
+import os
+sys.path.append('~/ros2_DUAV/src/mavros')
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../mavros'))
 from mavros_msgs.srv import SetMode, CommandBool, CommandTOL
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from scipy.spatial.transform import Rotation
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
 import time
 import rclpy
 from rclpy.node import Node
 
+# Variable for the GPS position
+current_pose = PoseStamped()
+
+#############################################################
+##### Node to subscribe to the GPS position MAVlink msg #####
+class GetPose(Node):
+    ### SAHRED VARIABLES ###
+    current_pose = PoseStamped()
+    test = 1
+    def __init__(self):
+        super().__init__('get_pose', namespace='POPEYE')
+        
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.VOLATILE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
+        
+        # Subscribers
+        self.sub__move_to_speed = self.create_subscription(PoseStamped, '/mavros/local_position/pose', self.pose_callback, qos_profile)
+        
+    def pose_callback(self, msg):
+        current_pose = msg
+        self.get_logger().info("READING CURRENT POSE")
+        self.get_logger().info("   >x(m)     :"+str(current_pose.pose.position.x))
+        self.get_logger().info("   >y(m)     :"+str(current_pose.pose.position.y))
+        self.get_logger().info("   >z(m)     :"+str(current_pose.pose.position.z))
+        rotation = Rotation.from_quat([current_pose.pose.orientation.x, current_pose.pose.orientation.y, current_pose.pose.orientation.z, current_pose.pose.orientation.w])
+        euler_angles = rotation.as_euler('zyx', degrees=True)
+        self.get_logger().info("   >yaw(°)   :"+str(euler_angles[0]))
+        self.get_logger().info("   >pitch(°) :"+str(euler_angles[1]))
+        self.get_logger().info("   >roll(°)  :"+str(euler_angles[2]))
+        
+##############################################
+##### Node related to the mission orders #####
 class DoMission(Node):
     def __init__(self):
         super().__init__('do_mission', namespace='POPEYE')
-
-        timeout_count=0
-
+        
         ### SERVICES ###
         # Prepare set_mode client
         self.cli__set_mode  = self.create_client(SetMode, '/mavros/set_mode')
@@ -39,7 +77,8 @@ class DoMission(Node):
         self.req__trigger_takeoff = CommandTOL.Request()
         
         ### TOPICS ###
-        self.pub__move_to_pos = self.create_publisher(PoseStamped, '/mavros/setpoint_position/local', 10)
+        # Publishers
+        self.pub__move_to_pos   = self.create_publisher(PoseStamped, '/mavros/setpoint_position/local', 10)
         self.pub__move_to_speed = self.create_publisher(TwistStamped, '/mavros/setpoint_velocity/cmd_vel', 10)
 
         self.get_logger().info("NODE do_mission STARTED.")
@@ -58,10 +97,8 @@ class DoMission(Node):
     
     def move_to_pos(self, north=0, east=0, up=0, yaw=0):
         msg = PoseStamped()
-        
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = ''
-        
         msg.pose.position.x = east 
         msg.pose.position.y = north 
         msg.pose.position.z = up
@@ -72,11 +109,13 @@ class DoMission(Node):
         msg.pose.orientation.z = quaternion[2]
         msg.pose.orientation.w = quaternion[3]
         
-        self.pub__move_to_pos.publish(msg)
+        for i in range(10):
+            self.pub__move_to_pos.publish(msg)
+            time.sleep(0.1)
+        self.get_logger().info('Publishing on /mavros/setpoint_position/local : \'east:%s north:%s up:%s yaw:%s\'' % (str(east), str(north), str(up), str(yaw)))
         
     def move_to_speed(self, x=0, y=0, z=0, yaw=0):
         msg = TwistStamped()
-
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = ''
 
@@ -88,62 +127,22 @@ class DoMission(Node):
         msg.twist.angular.z = yaw/180*3.14159
 
         self.pub__move_to_speed.publish(msg)
-    
-    def asserv_pos(self, x, y, z, yaw):
         
-    
+    def move_relative_to_pose(self, east=0, north=0, up=0, yaw=0):
+        print(DoMission.current_pose.pose.position.x)
+        print(DoMission.test)
+        relative_east = DoMission.current_pose.pose.position.x + east
+        relative_north = DoMission.current_pose.pose.position.y + north
+        relative_up = DoMission.current_pose.pose.position.z + up
+        # relative_east = DoMission.current_pose.pose.position. + yaw
+        self.move_to_pos(relative_east, relative_north, relative_up, 0)
+        self.get_logger().info('Moving relatively to current_pose : \'east:%s north:%s up:%s yaw:%s\'' % (str(east), str(north), str(up), str(yaw)))
+   
 def main(args=None):
     rclpy.init(args=args)
     
-    node = DoMission()
-    
-    # Change Mode
-    # future = node.change_mode(str(sys.argv[1]))
-    # rclpy.spin_until_future_complete(node, future)
-    # response = future.result()
-    # node.get_logger().info('Result of change_mode to \'%s\' : %s' % (str(sys.argv[1]), str(response.mode_sent)))
-    
-    # # Arm UAV
-    # future = node.trigger_arm(bool(sys.argv[2]))
-    # rclpy.spin_until_future_complete(node, future)
-    # response = future.result()
-    # node.get_logger().info('Result of trigger_arm to \'%s\' : %s -> %s ' % (str(sys.argv[2]), str(response.success), str(response.result)))
-    
-    # # Takeoff
-    # future = node.trigger_takeoff(float(sys.argv[3]))
-    # rclpy.spin_until_future_complete(node, future)
-    # response = future.result()
-    # node.get_logger().info('Result of trigger_takeoff to \'%s\' : %s -> %s' % (str(sys.argv[3]), str(response.success), str(response.result)))
-    
-    # # Wait for UAV to takeoff
-    # delay_seconds = 20 
-    # node.get_logger().info(f'Waiting TAKEOFF for {delay_seconds} seconds...')
-    # time.sleep(delay_seconds)
-    
-    # # Go to point
-    # node.move_to_pos(float(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7]))
-    # rclpy.spin_once(node)
-    # node.get_logger().info('Publishing on /mavros/setpoint_position/local : \'east:%s north:%s up:%s yaw:%s\'' % (str(sys.argv[4]), str(sys.argv[5]), str(sys.argv[6]), str(sys.argv[7])))
-    
-    # Go to speed
-    for i in range(10000):
-        node.move_to_speed(float(sys.argv[8]), float(sys.argv[9]), float(sys.argv[10]), float(sys.argv[11]))
-        # rclpy.spin_once(node)
-        node.get_logger().info('Publishing on /mavros/setpoint_velocity/cmd_vel : \'east:%s north:%s up:%s yaw:%s\'' % (str(sys.argv[8]), str(sys.argv[9]), str(sys.argv[10]), str(sys.argv[11])))
-
-    # # Wait for UAV to go to location
-    # delay_seconds = 20 
-    # node.get_logger().info(f'Waiting GO TO for {delay_seconds} seconds...')
-    # time.sleep(delay_seconds)
-    
-    # Change Mode
-    # future = node.change_mode('RTL')
-    # rclpy.spin_until_future_complete(node, future)
-    # response = future.result()
-    # node.get_logger().info('Result of change_mode to \'RTL\' : %s' % (str(response.mode_sent)))
+    node = GetPose()
+    rclpy.spin(node)
 
     node.destroy_node()
     rclpy.shutdown()
-
-if __name__ == '__main__':
-    main()
