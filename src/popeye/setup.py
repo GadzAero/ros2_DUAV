@@ -23,6 +23,7 @@ setup(
             'MAV_manager = popeye.MAV_manager:main',
             'ihm = popeye.ihm:main',
             'do_mission = popeye.do_mission:main',
+            'read_pos = popeye.read_pos:main',
             'exec = popeye.exec:main',
         ],
     },
