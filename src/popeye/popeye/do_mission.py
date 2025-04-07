@@ -15,8 +15,8 @@ import time
 import rclpy
 from rclpy.node import Node
         
-##############################################
-##### Node related to the mission orders #####
+####################################################################################################################################################################################################################################################################################
+##### Node related to the mission orders ###########################################################################################################################################################################################################################################
 class DoMission(Node):
     ### Class constructor ###
     def __init__(self):
@@ -133,29 +133,29 @@ def main(args=None):
     node = DoMission()
     
     # Change Mode
-    # future = node.change_mode(str(sys.argv[1]))
-    # rclpy.spin_until_future_complete(node, future)
-    # response = future.result()
-    # node.get_logger().info('Result of change_mode to \'%s\' : %s' % (str(sys.argv[1]), str(response.mode_sent)))
+    future = node.change_mode(str(sys.argv[1]))
+    rclpy.spin_until_future_complete(node, future)
+    response = future.result()
+    node.get_logger().info('Result of change_mode to \'%s\' : %s' % (str(sys.argv[1]), str(response.mode_sent)))
     
-    # # Arm UAV
-    # future = node.trigger_arm(bool(sys.argv[2]))
-    # rclpy.spin_until_future_complete(node, future)
-    # response = future.result()
-    # node.get_logger().info('Result of trigger_arm to \'%s\' : %s -> %s ' % (str(sys.argv[2]), str(response.success), str(response.result)))
+    # Arm UAV
+    future = node.trigger_arm(bool(sys.argv[2]))
+    rclpy.spin_until_future_complete(node, future)
+    response = future.result()
+    node.get_logger().info('Result of trigger_arm to \'%s\' : %s -> %s ' % (str(sys.argv[2]), str(response.success), str(response.result)))
     
-    # # Takeoff
-    # future = node.trigger_takeoff(float(sys.argv[3]))
-    # rclpy.spin_until_future_complete(node, future)
-    # response = future.result()
-    # node.get_logger().info('Result of trigger_takeoff to \'%s\' : %s -> %s' % (str(sys.argv[3]), str(response.success), str(response.result)))
+    # # # Takeoff
+    future = node.trigger_takeoff(float(sys.argv[3]))
+    rclpy.spin_until_future_complete(node, future)
+    response = future.result()
+    node.get_logger().info('Result of trigger_takeoff to \'%s\' : %s -> %s' % (str(sys.argv[3]), str(response.success), str(response.result)))
     
-    # # Wait for UAV to takeoff
-    # delay_seconds = 20 
-    # node.get_logger().info(f'Waiting TAKEOFF for {delay_seconds} seconds...')
-    # time.sleep(delay_seconds)
+    # Wait for UAV to takeoff
+    delay_seconds = 20 
+    node.get_logger().info(f'Waiting TAKEOFF for {delay_seconds} seconds...')
+    time.sleep(delay_seconds)
     
-    # # Go to point
+    # Go to point
     # node.move_to_pos(float(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7]))
     
     # Go to relative point from current_pose
