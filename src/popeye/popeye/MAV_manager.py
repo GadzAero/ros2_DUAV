@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+<<<<<<< HEAD
+=======
+from geographic_msgs.msg import GeoPoint
+# from interfaces.srv import TriggerArm
+
+>>>>>>> 4c497ca (UPDATE: Can send but not received)
 import rclpy
 from rclpy.node import Node
 from geographic_msgs.msg import GeoPoint
@@ -42,6 +48,12 @@ class MAVManager(Node):
         ### IN/MAV
         self.publisher_GPS_fire_coor = self.create_publisher(GeoPoint, 'IN/GPS_fire_coor', 10)
         self.timer = self.create_timer(0.5, self.tc_GPS_fire_coor) # timer_callback
+<<<<<<< HEAD
+=======
+        
+        ### SERVICES
+        # self.srv = self.create_service(TriggerArm, 'trigger_arm', self.arm)
+>>>>>>> 4c497ca (UPDATE: Can send but not received)
 
         self.get_logger().info("NODE MAV_manager STARTED.")
 
@@ -101,6 +113,7 @@ class MAVManager(Node):
         print("[COMMAND DISARM] Disarming (forced:"+str(force)+").")
         return True
 
+<<<<<<< HEAD
     #---------------------------------------------------------------------------------------------------------------------------------
     #----- Function to CHANGE MODE ------------------------------------------------------------------------------------def mav_set_mode(master, mode):
     def mav_set_mode(master, mode):
@@ -135,6 +148,20 @@ class MAVManager(Node):
             return False
         print("[COMMAND LAND] Landing.")
         return True
+=======
+    # Function to make Olive takeoff
+    # def arm(self, request, response):
+    #     try:
+    #         self.mavlink_connection.arducopter_arm()
+    #         self.mavlink_connection.motors_armed_wait()
+    #         response.success = True
+    #     except Exception as e:
+    #         self.get_logger().error(f"Failed to takeoff: {str(e)}")
+    #         self.get_logger().info("Popeye ARM FAILED")
+    #         response.success = False
+    #     self.get_logger().info("Popeye ARMED")
+    #     return response
+>>>>>>> 4c497ca (UPDATE: Can send but not received)
 
     #---------------------------------------------------------------------------------------------------------------------------------
     #----- Function to RTL ------------------------------------------------------------------------------------

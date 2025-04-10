@@ -21,6 +21,11 @@ setup(
     entry_points={
         'console_scripts': [
             'MAV_manager = popeye.MAV_manager:main',
+<<<<<<< HEAD
+=======
+            'ihm = popeye.ihm:main',
+            'do_mission = popeye.do_mission:main',
+>>>>>>> 4c497ca (UPDATE: Can send but not received)
         ],
     },
 )
