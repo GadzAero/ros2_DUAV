@@ -13,8 +13,12 @@ from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
 from geographic_msgs.msg import GeoPoint
 
-# Import FSM utils
-import popeye.MAV_utils as mav_utils
+# Import Intefaces
+from interfaces.srv import SetMode
+
+# Import MAV utils
+import popeye.utils_MAV as mav_utils
+
 
 ############################################################################################################################################################################################################################
 ##### Node MAVLink Manager ############################################################################################################################################################################################################################
@@ -37,7 +41,7 @@ class MAVManager(Node):
         self.mav_master.wait_heartbeat()
         self.get_logger().info("Connexion MAVLink établie !")
 
-        ### Request data stream
+        ### Request data stream from MAVLINK
         self.mav_master.mav.request_data_stream_send(
             1, 
             mavutil.mavlink.MAV_COMP_ID_ALL,  
@@ -46,14 +50,20 @@ class MAVManager(Node):
             1  # Activer le flux (0 pour désactiver)
         )
         
-        ### IN/MAV
+        ### PUBLISHER
         self.publisher_GPS_fire_coor = self.create_publisher(GeoPoint, 'IN/GPS_fire_coor', 10)
         self.timer = self.create_timer(0.1, self.tc_GPS_fire_coor) # timer_callback
+        
+        ### SERVICES
+        self.srv__set_mode = self.create_service(SetMode, 'set_mode', self.srv__set_mode_cb)
+        
+        ### General Parameters
+        target_coor_received = False
         
         self.get_logger().info("NODE MAV_manager STARTED.")
         
         ### FIREFIGHTER MISSION
-        mav_utils.mav_set_mode(self.mav_master, 'GUIDED')
+        # mav_utils.mav_set_mode(self.mav_master, 'AUTO')
         # mav_utils.mav_arm(self.mav_master)
         # mav_utils.mav_takeoff(self.mav_master, 6)
         # sleep(10)
@@ -78,6 +88,19 @@ class MAVManager(Node):
 
             # Publish the GeoPoint message
             self.publisher_GPS_fire_coor.publish(geopoint_msg) 
+            target_coor_received = True
+            
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Service to CHANGE MODE ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def srv__set_mode_cb(self, request, response):
+        self.get_logger().info(f"[SRV_SET_MODE] REQUEST > {request.mode_name}")
+        if mav_utils.mav_set_mode(self.mav_master, request.mode_name):
+            response.success = True
+            self.get_logger().info("[SRV_SET_MODE] RESPONSE > Success.")
+        else:
+            response.success = False
+            self.get_logger().warning("[SRV_SET_MODE] RESPONSE > Failure")
+        return response
 
 ############################################################################################################################################################################################################################
 ##### Node entry point ############################################################################################################################################################################################################################

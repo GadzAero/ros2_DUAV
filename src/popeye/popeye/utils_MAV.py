@@ -1,17 +1,30 @@
-
+# Import ROS2 utils
+from rclpy.node import Node
 
 # Import MAVLink utils
 import pymavlink.dialects.v20.common as mavlink
 from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
 
+# Colors from console print
+RESET = "\033[0m"
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
+MAGENTA = "\033[35m"
+CYAN = "\033[36m"
+WHITE = "\033[37m"
+BOLD = "\033[1m"
+UNDERLINE = "\033[4m"
+REVERSED = "\033[7m"
+
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----- Function to CHANGE MODE ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def mav_set_mode(master, mode):
     ### Check if the mode is valid
     if mode not in master.mode_mapping():
-        print("[COMMAND SET MODE] Unknown mode.")
-        print("[COMMAND SET MODE] Valid modes: ", list(master.mode_mapping().keys()))
+        print(f"{RED}[MAV_SET_MODE] MODE UKNOWN. Valid modes: {list(master.mode_mapping().keys())}")
         return False
     ### Send the command
     mode_id = master.mode_mapping()[mode]
@@ -19,9 +32,8 @@ def mav_set_mode(master, mode):
     ### Receive acknologment
     ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
-        print("[COMMAND SET MODE] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
+        print(f"{RED}[MAV_SET_MODE] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
-    print("[COMMAND SET MODE] Mode changed > " + mode)
     return True
         
 # #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

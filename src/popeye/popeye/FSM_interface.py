@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 
 # Import FSM utils
-# import popeye.utils.FSM_utils as fsm
+import popeye.utils_FSM as fsm
 
 #####################################################################################################################################################################
 ##### Node MAVLink Manager #####################################################################################################################################################################
@@ -13,9 +13,10 @@ class FSMInterface(Node):
     def __init__(self):
         super().__init__('FSM_interface', namespace='POPEYE')
         
-        self.get_logger().info("NODE FSM_interface STARTED.")
+        ### Start the FSM
+        sm = fsm.PopeyeFSM()
         
-    
+        self.get_logger().info("NODE FSM_interface STARTED.")
         
         
 #####################################################################################################################################################################

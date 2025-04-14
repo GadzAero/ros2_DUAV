@@ -28,7 +28,7 @@ class PopeyeFSM(StateMachine):
     # ### Olive Following
     # olive_following__idle = State('OliveFollowing__Idle')
     
-    # ### Firefighter states
+    ### Firefighter states
     fire_fighter__wait_for_GPS_coor      = State('FireFighter__WaitForGPSCoor')
     fire_fighter__write_approach_mission = State('FireFighter__WriteMission')
     fire_fighter__wait_for_validation    = State('FireFighter__WaitForValidation')
@@ -36,19 +36,34 @@ class PopeyeFSM(StateMachine):
     fire_fighter__target_aquisition      = State('FireFighter__TargetAquisition')
     fire_fighter__fire_hydrant_drop      = State('FireFighter__FireHydrantDrop')
     fire_fighter__rtl                    = State('FireFighter__Rtl')
+    
+    ### Workshop 1
+    ws1__change_mode = State('Workshop1__ChangeMode')
+    ws1__armed       = State('Workshop1__Armed')
+    ws1__takeoff     = State('Workshop1__Takeoff')
+    ws1__reposition  = State('Workshop1__Reposition')
+    ws1__landed      = State('Workshop1__Land')
+    ws1__disarmed    = State('Workshop1__Disarmed')
 
     ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
     ### Start and end events
-    event       = Event(idle.to(terminated, cond=lambda: PopeyeFSM.option==0)
-                               | idle.to(fire_fighter__wait_for_GPS_coor, cond=lambda: PopeyeFSM.option==1))
+    event = Event(idle.to(terminated, cond=lambda: PopeyeFSM.option==0)
+                 | idle.to(fire_fighter__wait_for_GPS_coor, cond=lambda: PopeyeFSM.option==1)
+                 | idle.to(ws1__change_mode, cond=lambda: PopeyeFSM.option==2))
     event_FIREFIGHTING = Event(fire_fighter__wait_for_GPS_coor.to(fire_fighter__write_approach_mission)
-                               | fire_fighter__write_approach_mission.to(fire_fighter__wait_for_validation)
-                               | fire_fighter__wait_for_validation.to(fire_fighter__do_appraoch_mission)
-                               | fire_fighter__do_appraoch_mission.to(fire_fighter__target_aquisition)
-                               | fire_fighter__target_aquisition.to(fire_fighter__fire_hydrant_drop)
-                               | fire_fighter__fire_hydrant_drop.to(fire_fighter__rtl)
-                               | fire_fighter__rtl.to(idle))
-        
+                              | fire_fighter__write_approach_mission.to(fire_fighter__wait_for_validation)
+                              | fire_fighter__wait_for_validation.to(fire_fighter__do_appraoch_mission)
+                              | fire_fighter__do_appraoch_mission.to(fire_fighter__target_aquisition)
+                              | fire_fighter__target_aquisition.to(fire_fighter__fire_hydrant_drop)
+                              | fire_fighter__fire_hydrant_drop.to(fire_fighter__rtl)
+                              | fire_fighter__rtl.to(idle))
+    event_WS1 = Event(ws1__change_mode.to(ws1__armed)
+                     | ws1__armed.to(ws1__takeoff)
+                     | ws1__takeoff.to(ws1__reposition)
+                     | ws1__reposition.to(ws1__landed)
+                     | ws1__landed.to(ws1__disarmed)
+                     | ws1__disarmed.to(idle))
+    
     def __init__(self):
         super(PopeyeFSM, self).__init__()
         
@@ -57,14 +72,15 @@ class PopeyeFSM(StateMachine):
     @idle.enter
     def on_ener__idle(self):
         print("\n[FSM] ----------------- POPEYE MENU -----------------")
-        print("[FSM] 1- Select a mission")
+        print("[FSM] 1- Workshop FireFighter")
+        print("[FSM] 2- Workshop 1")
         print("[FSM] 0- Terminate POPEYE")
         time.sleep(0.2)
         choice = input("\n[FSM] Select an option: ")
-        if choice.isdigit() and int(choice) in [0, 1]:
+        if choice.isdigit() and int(choice) in [0, 2]:
             PopeyeFSM.option = int(choice)
         else:
-            print("[FSM] Invalid option. Please select a number.")
+            print("[FSM] Invalid option. Please select a valid number.")
         print("[FSM] -----------------------------------------------\n")
         self.send('event')
     @terminated.enter
@@ -114,3 +130,35 @@ class PopeyeFSM(StateMachine):
         print("[FSM] > RETURNED TO LAUNCH.")
         time.sleep(1.5)
         self.send("event_FIREFIGHTING")
+        
+    ### Workshop 1 states
+    @ws1__change_mode.enter
+    def on_enter__change_mode(self):
+        print("[FSM] > CHANGING MODE.")
+        time.sleep(1.5)
+        self.send("event_WS1")
+    @ws1__armed.enter
+    def on_enter__armed(self):
+        print("[FSM] > ARMING.")
+        time.sleep(1.5)
+        self.send("event_WS1")
+    @ws1__takeoff.enter
+    def on_enter__takeoff(self):
+        print("[FSM] > TAKING OFF.")
+        time.sleep(1.5)
+        self.send("event_WS1")
+    @ws1__reposition.enter
+    def on_enter__reposition(self):
+        print("[FSM] > REPOSITIONING.")
+        time.sleep(1.5)
+        self.send("event_WS1")
+    @ws1__landed.enter
+    def on_enter__landed(self):
+        print("[FSM] > LANDING.")
+        time.sleep(1.5)
+        self.send("event_WS1")
+    @ws1__disarmed.enter
+    def on_enter__disarmed(self):
+        print("[FSM] > DISARMING.")
+        time.sleep(1.5)
+        self.send("event_WS1")
