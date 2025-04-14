@@ -4,6 +4,22 @@
 
 import time
 from statemachine import StateMachine, State, Event
+from rclpy.node import Node
+import rclpy
+
+# Colors from console print
+RESET = "\033[0m"
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+BLUE = "\033[34m"
+MAGENTA = "\033[35m"
+CYAN = "\033[36m"
+WHITE = "\033[37m"
+BOLD = "\033[1m"
+UNDERLINE = "\033[4m"
+REVERSED = "\033[7m"
+
 
 ##################################################################################################################################################################################################################################################################################################################################################################
 ##### FINITE STATE MACHINE FOR POPEYE ORDER CONTROL ##############################################################################################################################################################################################################################################################################################################
@@ -64,7 +80,8 @@ class PopeyeFSM(StateMachine):
                      | ws1__landed.to(ws1__disarmed)
                      | ws1__disarmed.to(idle))
     
-    def __init__(self):
+    def __init__(self, node):
+        self.node = node
         super(PopeyeFSM, self).__init__()
         
     ###### STATE AND TRANSITION ACTIONS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
@@ -80,8 +97,8 @@ class PopeyeFSM(StateMachine):
         if choice.isdigit() and int(choice) in [0, 2]:
             PopeyeFSM.option = int(choice)
         else:
-            print("[FSM] Invalid option. Please select a valid number.")
-        print("[FSM] -----------------------------------------------\n")
+            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.")
+        print("[FSM] -----------------------------------------------")
         self.send('event')
     @terminated.enter
     def on_enter__terminated(self):
@@ -134,31 +151,31 @@ class PopeyeFSM(StateMachine):
     ### Workshop 1 states
     @ws1__change_mode.enter
     def on_enter__change_mode(self):
-        print("[FSM] > CHANGING MODE.")
-        time.sleep(1.5)
+        print("\n[FSM] > SETTING MODE.")
+        self.node.call__set_mode("GUIDED")
         self.send("event_WS1")
     @ws1__armed.enter
     def on_enter__armed(self):
-        print("[FSM] > ARMING.")
-        time.sleep(1.5)
+        print("\n[FSM] > ARMING.")
+        self.node.call__arm(False)
         self.send("event_WS1")
     @ws1__takeoff.enter
     def on_enter__takeoff(self):
-        print("[FSM] > TAKING OFF.")
-        time.sleep(1.5)
+        print("\n[FSM] > TAKING OFF.")
+        self.node.call__takeoff(10)
         self.send("event_WS1")
     @ws1__reposition.enter
     def on_enter__reposition(self):
-        print("[FSM] > REPOSITIONING.")
-        time.sleep(1.5)
+        print("\n[FSM] > REPOSITIONING.")
+        self.node.call__reposition(alt=15)
         self.send("event_WS1")
     @ws1__landed.enter
     def on_enter__landed(self):
-        print("[FSM] > LANDING.")
-        time.sleep(1.5)
+        print("\n[FSM] > LANDING.")
+        self.node.call__reposition()
         self.send("event_WS1")
     @ws1__disarmed.enter
     def on_enter__disarmed(self):
-        print("[FSM] > DISARMING.")
-        time.sleep(1.5)
+        print("\n[FSM] > DISARMING.")
+        self.node.call__disarm(False)
         self.send("event_WS1")
