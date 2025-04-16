@@ -1,34 +1,13 @@
 # Standard commands : https://mavlink.io/en/services/command.html
 
+# Import General utils
+from popeye.utils_PARAMS import *
 # Import ROS2 utils
 from rclpy.node import Node
-
 # Import MAVLink utils
 import pymavlink.dialects.v20.common as mavlink
 from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
-
-# Colors from console print
-RESET = "\033[0m"
-RED = "\033[31m"
-GREEN = "\033[32m"
-YELLOW = "\033[33m"
-BLUE = "\033[34m"
-MAGENTA = "\033[35m"
-CYAN = "\033[36m"
-WHITE = "\033[37m"
-BOLD = "\033[1m"
-UNDERLINE = "\033[4m"
-REVERSED = "\033[7m"
-
-# PARAMETERS
-SGDB_LAT = 48.6126523
-SGDB_LON = 2.3963258
-DUAV_LAT = 45.4389466
-DUAV_LON = -0.4283327
-DEFAULT_LAT = SGDB_LAT
-DEFAULT_LON = SGDB_LON
-DEFAULT_ALT = 6
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----- Function to CHANGE MODE ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -78,20 +57,12 @@ def mav_takeoff(master, alt=6):
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----- Function to REPOSITION --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-def mav_reposition(master, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT, local=False):
+def mav_reposition(master, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
     ### Send the command
-    if local:
-        lat = int(lat*10**4)
-        lon = int(lon*10**4)
-        frame = mavkit.MAV_FRAME_LOCAL_NED
-    else:
-        lat = int(lat*10**7)
-        lon = int(lon*10**7)
-        frame = mavkit.MAV_FRAME_GLOBAL_RELATIVE_ALT
     master.mav.command_int_send(
         master.target_system, master.target_component, 
-        frame, mavkit.MAV_CMD_DO_REPOSITION, 0, 0,
-        0, 1, 0, 0, lat, lon, alt)
+        mavkit.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavkit.MAV_CMD_DO_REPOSITION, 0, 0,
+        0, 1, 0, 0, int(lat*10**7), int(lon*10**7), alt)
     ### Receive acknologment
     ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:

@@ -21,9 +21,12 @@ set(srv_file
   "srv/Rtl.srv"
   "srv/Disarm.srv"
 )
-
+set(act_file
+  "action/TakeoffAct.action"
+)
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_file}
+  ${act_file}
 )
 ament_export_dependencies(rosidl_default_runtime)
 

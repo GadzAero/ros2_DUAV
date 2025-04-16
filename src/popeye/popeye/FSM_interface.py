@@ -2,14 +2,11 @@
 
 # Import standard utils
 from time import sleep
-
 # Import ROS2 utils
 import rclpy
 from rclpy.node import Node
-
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Takeoff, Reposition, Land, Rtl, Disarm
-
 # Import FSM utils
 import popeye.utils_FSM as fsm
 from popeye.utils_MAV import DEFAULT_LAT, DEFAULT_LON, DEFAULT_ALT
@@ -93,7 +90,7 @@ class FSMInterface(Node):
         self.get_logger().info(f"> Calling TAKEOFF (Alt:{self.req__takeoff.alt})")
         future = self.cli__takeoff.call_async(self.req__takeoff)
         rclpy.spin_until_future_complete(self, future)
-        # sleep(15)
+        sleep(15)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
         else:
@@ -101,15 +98,14 @@ class FSMInterface(Node):
             
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the REPOSITION service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__reposition(self, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT, local=True):
+    def call__reposition(self, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
         self.req__reposition.lat = lat*1.
         self.req__reposition.lon = lon*1.
         self.req__reposition.alt = alt*1.
-        self.req__reposition.local = True
-        self.get_logger().info(f"> Calling REPOSITION (Lat:{self.req__reposition.lat}, Lon:{self.req__reposition.lon}, Alt:{self.req__reposition.alt}, Local:{self.req__reposition.local})")
+        self.get_logger().info(f"> Calling REPOSITION (Lat:{self.req__reposition.lat}, Lon:{self.req__reposition.lon}, Alt:{self.req__reposition.alt})")
         future = self.cli__reposition.call_async(self.req__reposition)
         rclpy.spin_until_future_complete(self, future)
-        sleep(30)
+        sleep(15)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
         else:
