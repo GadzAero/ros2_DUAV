@@ -139,9 +139,9 @@ class PopeyeFSM(StateMachine):
         print("\n[FSM] > GETTING READY.")
         print("[FSM] ----------------- CHOSE REPOSITION COORDONATES -----------------")
         global ready_lon, ready_lat, ready_alt
-        ready_lon = float(input("[FSM] Lon: "))
-        ready_lat = float(input("[FSM] Lat: "))
-        ready_alt = float(input("[FSM] Alt: "))
+        ready_lon = 48.61 #float(input("[FSM] Lon: "))
+        ready_lat = 2.39  #float(input("[FSM] Lat: "))
+        ready_alt = 10    #float(input("[FSM] Alt: "))
         print("[FSM] -----------------------------------------------")
         self.node.call__set_mode("GUIDED")
         self.node.call__arm(False)
