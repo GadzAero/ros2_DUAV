@@ -10,6 +10,7 @@ import asyncio
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 
 # Import MAVLink utils
 import pymavlink.dialects.v20.common as mavlink
@@ -48,69 +49,83 @@ class MAVManager(Node):
         self.mav_master.mav.command_long_send(
             self.mav_master.target_system, self.mav_master.target_component,
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
-            245, 1_000_000, 0, 0, 0, 0, 0)
-        self.mav_master.mav.request_data_stream_send(
-            1, 
-            mavutil.mavlink.MAV_COMP_ID_ALL,  
-            mavutil.mavlink.MAV_DATA_STREAM_ALL, 
-            10,  # Fréquence de mise à jour (Hz)
-            1  # Activer le flux (0 pour désactiver)
-        )
+            245, 1e6, 0, 0, 0, 0, 0)
+        self.mav_master.mav.command_long_send(
+            self.mav_master.target_system, self.mav_master.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            253, 0.5e6, 0, 0, 0, 0, 0)
+        # self.mav_master.mav.request_data_stream_send(
+        #     1, 
+        #     mavutil.mavlink.MAV_COMP_ID_ALL,  
+        #     mavutil.mavlink.MAV_DATA_STREAM_ALL, 
+        #     10,  # Fréquence de mise à jour (Hz)
+        #     1  # Activer le flux (0 pour désactiver)
+        # )
         
         ### TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
-        test1 = rclpy.callback_groups.ReentrantCallbackGroup()
-        self.timer__status_text        = self.create_timer(0.1, self.timer_cb__status_text,        callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
-        self.timer__extended_sys_state = self.create_timer(0.1, self.timer_cb__extended_sys_state, callback_group=test1)
+        self.timer__all = self.create_timer(0.05, self.timer_cb__all, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### SERVICES (running them concurently to themselves or actions is useless)
-        self.srv__set_mode   = self.create_service(SetMode,    'set_mode',   self.srv_cb__set_mode,   callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
-        self.srv__arm        = self.create_service(Arm,        'arm',        self.srv_cb__arm,        callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
-        self.srv__takeoff    = self.create_service(Takeoff,    'takeoff',    self.srv_cb__takeoff,    callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
-        self.srv__reposition = self.create_service(Reposition, 'reposition', self.srv_cb__reposition, callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
-        self.srv__land       = self.create_service(Land,       'land',       self.srv_cb__land,       callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
-        self.srv__rtl        = self.create_service(Rtl,        'rtl',        self.srv_cb__rtl,        callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
-        self.srv__disarm     = self.create_service(Disarm,     'disarm',     self.srv_cb__disarm,     callback_group=rclpy.callback_groups.ReentrantCallbackGroup())
+        self.srv__set_mode   = self.create_service(SetMode,    'set_mode',   self.srv_cb__set_mode,   callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__arm        = self.create_service(Arm,        'arm',        self.srv_cb__arm,        callback_group=MutuallyExclusiveCallbackGroup())
+        # self.srv__takeoff    = self.create_service(Takeoff,    'takeoff',    self.srv_cb__takeoff,    callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__reposition = self.create_service(Reposition, 'reposition', self.srv_cb__reposition, callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__land       = self.create_service(Land,       'land',       self.srv_cb__land,       callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__rtl        = self.create_service(Rtl,        'rtl',        self.srv_cb__rtl,        callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__disarm     = self.create_service(Disarm,     'disarm',     self.srv_cb__disarm,     callback_group=MutuallyExclusiveCallbackGroup())
         
         ### ACTIONS (running them concurently to themselves or services is useless)
-        test = rclpy.callback_groups.ReentrantCallbackGroup()
-        self.act__takeoff = ActionServer(self, TakeoffAct, 'takeoff_act', self.act_cb__takeoff, callback_group=test)
+        self.act__takeoff = ActionServer(self, TakeoffAct, 'takeoff_act', self.act_cb__takeoff, callback_group=ReentrantCallbackGroup())
         
         ### General Parameters
         self.fire_pos_lat = None
         self.fire_pos_lon = None
-        self.landed_state = None
+        self.nb_msg = 0
+        self.landed_state = ""
+        self.landed_state2 = ""
+        
+        ### Timers for debug 
+        self.elapsed_time = -time.time()
+        self.start_time = time.time()
         
         self.get_logger().info("NODE MAV_manager STARTED.")
         
     ############################################################################################################################################################################################################################
     ##### TIMER CALLBACK ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Function to reiceive STATUS_TEXT  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def timer_cb__status_text(self):
-        text_msg = self.mav_master.recv_match(type="STATUSTEXT", blocking=True)
-        if text_msg is not None: # For noise
-            self.get_logger().info('RECEIVED > %s' % text_msg.text)
-            if 'FIRE' in text_msg.text:
+    #----- Function to reiceive ALL  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def timer_cb__all(self):
+        ### Receive Mavlink messages
+        msg = self.mav_master.recv_match(type=['EXTENDED_SYS_STATE', 'STATUSTEXT'], blocking=False)
+        ## For noise
+        if not msg:
+            return
+        
+        ### Save the message data
+        if msg.get_type() == "STATUSTEXT":
+            self.get_logger().info('RECEIVED > %s' % msg.text)
+            if 'FIRE' in msg.text:
                 # Create a GeoPoint message
-                data = text_msg.text.split()
+                data = msg.text.split()
                 self.fire_pos_lat = float(data[1])
                 self.fire_pos_lon = float(data[3])
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Function to reiceive EXTENDED_SYS_STATE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def timer_cb__extended_sys_state(self):
-        landed_msg = self.mav_master.recv_match(type='EXTENDED_SYS_STATE', blocking=True)
-        if landed_msg is not None:
-            self.landed_state = landed_msg.landed_state
-            if self.landed_state == 0:
+        elif msg.get_type() == "EXTENDED_SYS_STATE":
+            landed_state_id = msg.landed_state
+            if landed_state_id == 0:
                 self.landed_state = "MAV_LANDED_STATE_UNDEFINED"
-            elif self.landed_state == 1:
+            elif landed_state_id == 1:
                 self.landed_state = "MAV_LANDED_STATE_ON_GROUND"
-            elif self.landed_state == 2:
+            elif landed_state_id == 2:
                 self.landed_state = "MAV_LANDED_STATE_IN_AIR"
-            elif self.landed_state == 3:
+            elif landed_state_id == 3:
                 self.landed_state = "MAV_LANDED_STATE_TAKEOFF"
-            elif self.landed_state == 4:
+            elif landed_state_id == 4:
                 self.landed_state = "MAV_LANDED_STATE_LANDING"
+            # Bench the perf
+            self.nb_msg+=1
+            self.elapsed_time += time.time()
+            print(f"OKKKK: {self.landed_state} --- time:{self.elapsed_time:.5f} --- Nb msg:{self.nb_msg}/{(time.time()-self.start_time)/1:.0f}")
+            self.elapsed_time = -time.time()
 
     ############################################################################################################################################################################################################################
     ##### ACTIONS CALLBACK ############################################################################################################################################################################################################################
@@ -123,22 +138,28 @@ class MAVManager(Node):
         feedback_msg = TakeoffAct.Feedback()
         result = TakeoffAct.Result()
         
+        
+        self.get_logger().info(f"> 1111111111")
+        
         #### Taking off and returning the feedback
         feedback_msg.current_alt = 0.
         
+        self.get_logger().info(f"> 222222222222")
+        
         ## Check if the command is valid
-        mav_utils.mav_takeoff(self.mav_master, goal_handle.request.alt*1.)
-        # if not mav_utils.mav_takeoff(self.mav_master, goal_handle.request.alt*1.):
-            # self.get_logger().warning("      -> Failure")
-            # sleep(1)
-            # goal_handle.abort()
-            # result.success = False
-            # return result
+        if not mav_utils.mav_takeoff(self.mav_master, goal_handle.request.alt*1.):
+            self.get_logger().warning("      -> Failure")
+            sleep(1)
+            goal_handle.abort()
+            result.success = False
+            return result
+        
+        self.get_logger().info(f"33333333333333")
         
         start_time = time.time()
         elapsed_time = 0
         while elapsed_time < 10: # self.landed_state != "MAV_LANDED_STATE_IN_AIR" or
-            self.get_logger().info(f"Taking off (Current_alt: {feedback_msg.current_alt}, State:{self.landed_state}, Elapsed_time:{elapsed_time:.1f})")
+            self.get_logger().info(f"Taking off (Current_alt: {feedback_msg.current_alt}, State:{10}, Elapsed_time:{elapsed_time:.1f})")
             sleep(1)
             elapsed_time = time.time() - start_time
             
@@ -247,7 +268,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = MAVManager()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=10)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
     executor.add_node(node)
     
     try:
