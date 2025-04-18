@@ -20,7 +20,7 @@ set(srv_file
   "srv/Disarm.srv"
 )
 set(act_file
-  "action/TakeoffAct.action"
+  "action/Takeoff.action"
   "action/Land.action"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}

@@ -2,3 +2,4 @@
 bool success
 ---
 float32 current_alt
+string  state

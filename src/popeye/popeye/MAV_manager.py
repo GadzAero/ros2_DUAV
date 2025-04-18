@@ -15,7 +15,7 @@ from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Reposition, Rtl, Disarm
-from interfaces.action import TakeoffAct, Land
+from interfaces.action import Takeoff, Land
 # Import MAV utils
 import popeye.utils_MAV as mav_utils
 
@@ -24,6 +24,7 @@ import popeye.utils_MAV as mav_utils
 class MAVManager(Node):
     def __init__(self):
         super().__init__('MAV_manager', namespace='POPEYE')
+        self.get_logger().info("NODE MAV_manager STARTED.")
 
         ### Connexion to MAVLink
         try:
@@ -68,8 +69,8 @@ class MAVManager(Node):
         self.srv__disarm     = self.create_service(Disarm,     'disarm',     self.srv_cb__disarm,     callback_group=MutuallyExclusiveCallbackGroup())
         
         ### ACTIONS (running them concurently to themselves or services is useless)
-        self.act__takeoff = ActionServer(self, TakeoffAct, 'takeoff', self.act_cb__takeoff, callback_group=MutuallyExclusiveCallbackGroup())
-        self.act__land    = ActionServer(self, Land,       'land',    self.act_cb__land,    callback_group=MutuallyExclusiveCallbackGroup())
+        self.act__takeoff = ActionServer(self, Takeoff, 'takeoff', self.act_cb__takeoff, callback_group=MutuallyExclusiveCallbackGroup())
+        self.act__land    = ActionServer(self, Land,       'land', self.act_cb__land,    callback_group=MutuallyExclusiveCallbackGroup())
         
         ### General Parameters
         ## Fire position
@@ -86,8 +87,6 @@ class MAVManager(Node):
         ### Timers for debug 
         self.elapsed_time = -time.time()
         self.start_time = time.time()
-        
-        self.get_logger().info("NODE MAV_manager STARTED.")
         
     ############################################################################################################################################################################################################################
     ##### TIMER CALLBACK ############################################################################################################################################################################################################################
@@ -146,60 +145,46 @@ class MAVManager(Node):
         print()
         self.get_logger().info(f"> Call action TAKEOFF (Alt:{goal_handle.request.alt})")
         
-        #### Taking off and returning the feedback
-        feedback = TakeoffAct.Feedback()
-        
-        ## Check if the command is valid
-        if not mav_utils.mav_takeoff(self.mav_master, goal_handle.request.alt*1.):
-            self.get_logger().warning("      -> Failure")
+        if not mav_utils.mav_takeoff(self.mav_master, goal_handle.request.alt):
+            self.get_logger().warning("      -> Failure: command not valid")
             goal_handle.abort()
-            result = TakeoffAct.Result()
-            result.success = False
-            return result
+            return Takeoff.Result(success=False)
         
+        start_time = time.time()
         while self.landed_state != "MAV_LANDED_STATE_IN_AIR":
-            feedback.current_alt = self.popeye_pos_alt
-            goal_handle.publish_feedback(feedback)
-            self.get_logger().info(f"      ... Taking off (Current_alt:{feedback.current_alt}, State:{self.landed_state})")
+            goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.popeye_pos_alt, state=self.landed_state))
+            self.get_logger().info(f"      ... Taking off (Current_alt:{self.popeye_pos_alt}, State:{self.landed_state})")
+            if time.time()-start_time > 25:
+                self.get_logger().warning("      -> Failure: command has timed out")
+                goal_handle.abort()
+                return Takeoff.Result(success=False)
             sleep(1)
-        feedback.current_alt = self.popeye_pos_alt
-        goal_handle.publish_feedback(feedback)
-        self.get_logger().info(f"      ... Taking off (Current_alt:{feedback.current_alt}, State:{self.landed_state})")
-            
-        self.get_logger().info("      -> Success.")
+        self.get_logger().info("      -> Success")
         goal_handle.succeed()
-        result = TakeoffAct.Result()
-        result.success = True
-        return result
+        return Takeoff.Result(success=True)
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to LAND  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__land(self, goal_handle):
         print()
         self.get_logger().info(f"> Call action LAND")
         
-        #### Taking off and returning the feedback
-        feedback_msg = Land.Feedback()
-        feedback_msg.current_alt = 0.
-        result = Land.Result()
-        
-        ## Check if the command is valid
         if not mav_utils.mav_land(self.mav_master):
-            self.get_logger().warning("      -> Failure")
+            self.get_logger().warning("      -> Failure: command not valid")
             goal_handle.abort()
-            result.success = False
-            return result
+            return Land.Result(success=False)
         
+        start_time = time.time()
         while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
-            feedback_msg.current_alt = self.popeye_pos_alt
-            goal_handle.publish_feedback(feedback_msg)
+            goal_handle.publish_feedback(Land.Feedback(current_alt=self.popeye_pos_alt, state=self.landed_state))
             self.get_logger().info(f"      ... Landing (Current_alt:{self.popeye_pos_alt}, State:{self.landed_state})")
+            if time.time()-start_time > 40:
+                self.get_logger().warning("      -> Failure: command has timed out")
+                goal_handle.abort()
+                return Land.Result(success=False)
             sleep(1)
-        self.get_logger().info(f"      ... Landing (Current_alt:{self.popeye_pos_alt}, State:{self.landed_state})")
-            
-        self.get_logger().info("      -> Success.")
+        self.get_logger().info("      -> Success")
         goal_handle.succeed()
-        result.success = True
-        return result
+        return Land.Result(success=True)
              
     ############################################################################################################################################################################################################################
     ##### SERVICES CALLBACK ############################################################################################################################################################################################################################

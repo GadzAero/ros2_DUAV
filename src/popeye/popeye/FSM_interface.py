@@ -9,7 +9,7 @@ from rclpy.action import ActionClient
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Reposition, Rtl, Disarm
-from interfaces.action import TakeoffAct, Land
+from interfaces.action import Takeoff, Land
 # Import FSM utils
 import popeye.utils_FSM as fsm
 from popeye.utils_MAV import DEFAULT_LAT, DEFAULT_LON, DEFAULT_ALT
@@ -19,10 +19,11 @@ from popeye.utils_MAV import DEFAULT_LAT, DEFAULT_LON, DEFAULT_ALT
 class FSMInterface(Node):
     def __init__(self):
         super().__init__('FSM_interface', namespace='POPEYE')
+        self.get_logger().info("NODE FSM_interface STARTED.")
         
         ### Actions clients
-        self.cli_act__takeoff = ActionClient(self, TakeoffAct, 'takeoff', callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_act__land    = ActionClient(self, Land,       'land',    callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_act__takeoff = ActionClient(self, Takeoff, 'takeoff', callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_act__land    = ActionClient(self, Land,       'land', callback_group=MutuallyExclusiveCallbackGroup())
         
         ### Services clients
         self.cli_srv__set_mode   = self.create_client(SetMode,    'set_mode',   callback_group=MutuallyExclusiveCallbackGroup())
@@ -35,8 +36,8 @@ class FSMInterface(Node):
                 or not self.cli_srv__reposition.wait_for_service(timeout_sec=1.0)
                 or not self.cli_srv__rtl.       wait_for_service(timeout_sec=1.0)
                 or not self.cli_srv__disarm.    wait_for_service(timeout_sec=1.0)):
-            self.get_logger().warning('service(s) not available, waiting again...')
-        self.req__set_mode   = SetMode.Request()
+            self.get_logger().warning('Service(s) not available, waiting again...')
+        self.req__set_mode = SetMode.Request()
         self.req__arm        = Arm.Request()
         self.req__reposition = Reposition.Request()
         self.req__rtl        = Rtl.Request()
@@ -44,21 +45,79 @@ class FSMInterface(Node):
         
         ### Start the FSM
         sm = fsm.PopeyeFSM(self)
-        
-        self.get_logger().info("NODE FSM_interface STARTED.")   
+        img_path = "/home/step/ros2_DUAV/src/popeye/popeye//POPEYE_FSM.png"
+        sm._graph().write_png(img_path)
     
+    ############################################################################################################################################################################################################################
+    ##### ACTIONS CLIENTS ############################################################################################################################################################################################################################
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Function to call the TAKEOFF action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__takeoff(self, alt=6):
+        self.get_logger().info(f"> Calling TAKEOFF action (Alt:{alt})")
+        if not self.cli_act__takeoff.wait_for_server(timeout_sec=3.0):
+            self.get_logger().warn("       ... TAKEOFF action server not available")
+            return False
+        self.get_logger().info("       ... TAKEOFF action server available")
+            
+        goal__takeoff = Takeoff.Goal()
+        goal__takeoff.alt = float(alt)
+        goal_handle_future = self.cli_act__takeoff.send_goal_async(goal__takeoff, feedback_callback=lambda feedback_msg: 
+                                                                   self.get_logger().info(f"       ... Feedback (Current_alt:{feedback_msg.feedback.current_alt:.1f}, State:{feedback_msg.feedback.state})"))
+        rclpy.spin_until_future_complete(self, goal_handle_future)
+        if not goal_handle_future.result().accepted:
+            self.get_logger().warn("       ... TAKEOFF goal rejected")
+            return False
+        self.get_logger().info("       ... TAKEOFF goal accepted")
+        
+        action_future = goal_handle_future.result().get_result_async()
+        rclpy.spin_until_future_complete(self, action_future)
+        if not action_future.result().result.success:
+            self.get_logger().warning("       ==> TAKEOFF failed")
+            return False
+        self.get_logger().info("       ==> TAKEOFF successful")
+        return True
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Function to call the LAND action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__land(self):
+        self.get_logger().info(f"> Calling LAND action")
+        if not self.cli_act__land.wait_for_server(timeout_sec=3.0):
+            self.get_logger().warn("       ... LAND action server not available")
+            return False
+        self.get_logger().info("       ... LAND action server available")
+            
+        goal__land = Land.Goal()
+        goal_handle_future = self.cli_act__land.send_goal_async(goal__land, feedback_callback=lambda feedback_msg: 
+                                                                   self.get_logger().info(f"       ... Feedback (Current_alt:{feedback_msg.feedback.current_alt:.1f}, State:{feedback_msg.feedback.state})"))
+        rclpy.spin_until_future_complete(self, goal_handle_future)
+        if not goal_handle_future.result().accepted:
+            self.get_logger().warn("       ... LAND goal rejected")
+            return False
+        self.get_logger().info("       ... LAND goal accepted")
+        
+        action_future = goal_handle_future.result().get_result_async()
+        rclpy.spin_until_future_complete(self, action_future)
+        if not action_future.result().result.success:
+            self.get_logger().warning("       ==> LAND failed")
+            return False
+        self.get_logger().info("       ==> LAND successful")
+        return True
+    
+    ############################################################################################################################################################################################################################
+    ##### SERVICES CLIENTS ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the SET_MODE service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__set_mode(self, mode='RTL'):
         self.req__set_mode.mode_name = mode
         self.get_logger().info(f"> Calling SET_MODE (Force:{self.req__set_mode.mode_name})")
+        while not self.cli_srv__set_mode.wait_for_service(timeout_sec=1.0):
+            self.get_logger().warning('Service SET_MODE not available, waiting again...')
         future = self.cli_srv__set_mode.call_async(self.req__set_mode)
+        
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
         else:
             self.get_logger().warning(f"     -> Failed")
-            
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the ARM service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__arm(self, force=False):
@@ -70,38 +129,10 @@ class FSMInterface(Node):
             self.get_logger().info(f"     -> Successful")
         else:
             self.get_logger().warning(f"     -> Failed")
-            
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Function to call the TAKEOFF action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__takeoff(self, alt=6):
-        goal_msg = TakeoffAct.Goal()
-        goal_msg.alt = alt*1.
-        self.get_logger().info(f"> Calling TAKEOFF action (Alt:{goal_msg.alt})")
-        self.cli_act__takeoff.wait_for_server()
-        self.takeoff__send_goal_future = self.cli_act__takeoff.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
-        self.takeoff__send_goal_future.add_done_callback(self.goal_response_callback)
-    def goal_response_callback(self, future):
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            self.get_logger().info('Goal rejected')
-            return
-
-        self.get_logger().info('Goal accepted')
-
-        self.takeoff__get_result_future = goal_handle.get_result_async()
-        self.takeoff__get_result_future.add_done_callback(self.get_result_callback)
-    def get_result_callback(self, future):
-        result = future.result().result
-        self.get_logger().info(f'Result: {result.success}')
-        
-    def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-        self.get_logger().info('Received feedback: {0}'.format(feedback.current_alt))
-            
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the REPOSITION service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__reposition(self, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
-        sleep(20)   ########################################
+        # sleep(20)   ########################################
         self.req__reposition.lat = lat*1.
         self.req__reposition.lon = lon*1.
         self.req__reposition.alt = alt*1.
@@ -115,42 +146,12 @@ class FSMInterface(Node):
             self.get_logger().warning(f"     -> Failed")
             
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Function to call the LAND action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__land(self):
-        self.get_logger().info("> Calling LAND action.")
-        self.cli_act__land.wait_for_server()
-        self.cli_act__land_future = self.cli_act__land.send_goal_async(Land.Goal())
-        sleep(20)
-    #     self.cli_act__land_future.add_done_callback(self.goal_response_callback)
-    #     # future = self.cli_srv__land.call_async(self.req__land)
-    #     # rclpy.spin_until_future_complete(self, future)
-    #     # sleep(15)
-    #     # if future.result().success:
-    #     #     self.get_logger().info(f"     -> Successful")
-    #     # else:
-    #     #     self.get_logger().warning(f"     -> Failed")
-    # def goal_response_callback(self, future):
-    #     goal_handle = future.result()
-    #     if not goal_handle.accepted:
-    #         self.get_logger().info('Goal rejected')
-    #         return
-
-    #     self.get_logger().info('Goal accepted')
-
-    #     self.cli_act__land_future = goal_handle.get_result_async()
-    #     self.cli_act__land_future.add_done_callback(self.get_result_callback)
-    # def get_result_callback(self, future):
-    #     result = future.result().result
-    #     self.get_logger().info('Result: {0}'.format(result.success))
-    #     rclpy.shutdown()
-            
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the RTL service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__rtl(self):
         self.get_logger().info("> Calling RTL.")
         future = self.cli_srv__rtl.call_async(self.req__rtl)
         rclpy.spin_until_future_complete(self, future)
-        sleep(30)
+        # sleep(30)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
         else:
