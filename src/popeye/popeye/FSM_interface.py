@@ -8,8 +8,8 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 # Import Intefaces
-from interfaces.srv import SetMode, Arm, Reposition, Rtl, Disarm
-from interfaces.action import Takeoff, Land
+from interfaces.srv import SetMode, Arm, Rtl, Disarm
+from interfaces.action import Takeoff, Land, Reposition
 # Import FSM utils
 import popeye.utils_FSM as fsm
 from popeye.utils_MAV import DEFAULT_LAT, DEFAULT_LON, DEFAULT_ALT
@@ -21,39 +21,40 @@ class FSMInterface(Node):
         super().__init__('FSM_interface', namespace='POPEYE')
         self.get_logger().info("NODE FSM_interface STARTED.")
         
-        ### Actions clients
-        self.cli_act__takeoff = ActionClient(self, Takeoff, 'takeoff', callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_act__land    = ActionClient(self, Land,       'land', callback_group=MutuallyExclusiveCallbackGroup())
-        
         ### Services clients
         self.cli_srv__set_mode   = self.create_client(SetMode,    'set_mode',   callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_srv__arm        = self.create_client(Arm,        'arm',        callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__reposition = self.create_client(Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_srv__rtl        = self.create_client(Rtl,        'rtl',        callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_srv__disarm     = self.create_client(Disarm,     'disarm',     callback_group=MutuallyExclusiveCallbackGroup())
         while (not self.cli_srv__set_mode.      wait_for_service(timeout_sec=1.0)
                 or not self.cli_srv__arm.       wait_for_service(timeout_sec=1.0)
-                or not self.cli_srv__reposition.wait_for_service(timeout_sec=1.0)
+                # or not self.cli_srv__reposition.wait_for_service(timeout_sec=1.0)
                 or not self.cli_srv__rtl.       wait_for_service(timeout_sec=1.0)
                 or not self.cli_srv__disarm.    wait_for_service(timeout_sec=1.0)):
             self.get_logger().warning('Service(s) not available, waiting again...')
         self.req__set_mode = SetMode.Request()
         self.req__arm        = Arm.Request()
-        self.req__reposition = Reposition.Request()
+        # self.req__reposition = Reposition.Request()
         self.req__rtl        = Rtl.Request()
         self.req__disarm     = Disarm.Request() 
+        
+        ### Actions clients
+        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
         
         ### Start the FSM
         sm = fsm.PopeyeFSM(self)
         img_path = "/home/step/ros2_DUAV/src/popeye/popeye//POPEYE_FSM.png"
         sm._graph().write_png(img_path)
+        # self.call__reposition()
     
     ############################################################################################################################################################################################################################
     ##### ACTIONS CLIENTS ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the TAKEOFF action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__takeoff(self, alt=6):
-        self.get_logger().info(f"> Calling TAKEOFF action (Alt:{alt})")
+    def call__takeoff(self, alt=DEFAULT_ALT):
+        self.get_logger().info(f"> Calling TAKEOFF action (alt:{alt})")
         if not self.cli_act__takeoff.wait_for_server(timeout_sec=3.0):
             self.get_logger().warn("       ... TAKEOFF action server not available")
             return False
@@ -62,7 +63,7 @@ class FSMInterface(Node):
         goal__takeoff = Takeoff.Goal()
         goal__takeoff.alt = float(alt)
         goal_handle_future = self.cli_act__takeoff.send_goal_async(goal__takeoff, feedback_callback=lambda feedback_msg: 
-                                                                   self.get_logger().info(f"       ... Feedback (Current_alt:{feedback_msg.feedback.current_alt:.1f}, State:{feedback_msg.feedback.state})"))
+                                                                   self.get_logger().info(f"       ... Feedback (current_alt:{feedback_msg.feedback.current_alt:.1f}, state:{feedback_msg.feedback.state})"))
         rclpy.spin_until_future_complete(self, goal_handle_future)
         if not goal_handle_future.result().accepted:
             self.get_logger().warn("       ... TAKEOFF goal rejected")
@@ -75,6 +76,34 @@ class FSMInterface(Node):
             self.get_logger().warning("       ==> TAKEOFF failed")
             return False
         self.get_logger().info("       ==> TAKEOFF successful")
+        return True
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Function to call the REPOSITION action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__reposition(self, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
+        self.get_logger().info(f"> Calling REPOSITION action (alt:{alt})")
+        if not self.cli_act__reposition.wait_for_server(timeout_sec=3.0):
+            self.get_logger().warn("       ... REPOSITION action server not available")
+            return False
+        self.get_logger().info("       ... REPOSITION action server available")
+            
+        goal__reposition = Reposition.Goal()
+        goal__reposition.lat = float(lat)
+        goal__reposition.lon = float(lon)
+        goal__reposition.alt = float(alt)
+        goal_handle_future = self.cli_act__reposition.send_goal_async(goal__reposition, feedback_callback=lambda feedback_msg: 
+                                                                      self.get_logger().info(f"       ... Feedback (dist_to_goal:{feedback_msg.feedback.dist_to_goal}, delta_alt:{feedback_msg.feedback.delta_alt:.1f}, time_at_position:{feedback_msg.feedback.time_at_position:.1f})"))
+        rclpy.spin_until_future_complete(self, goal_handle_future)
+        if not goal_handle_future.result().accepted:
+            self.get_logger().warn("       ... REPOSITION goal rejected")
+            return False
+        self.get_logger().info("       ... REPOSITION goal accepted")
+        
+        action_future = goal_handle_future.result().get_result_async()
+        rclpy.spin_until_future_complete(self, action_future)
+        if not action_future.result().result.success:
+            self.get_logger().warning("       ==> REPOSITION failed")
+            return False
+        self.get_logger().info("       ==> REPOSITION successful")
         return True
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the LAND action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -125,21 +154,6 @@ class FSMInterface(Node):
         self.get_logger().info(f"> Calling ARM (Force:{self.req__arm.force})")
         future = self.cli_srv__arm.call_async(self.req__arm)
         rclpy.spin_until_future_complete(self, future)
-        if future.result().success:
-            self.get_logger().info(f"     -> Successful")
-        else:
-            self.get_logger().warning(f"     -> Failed")
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Function to call the REPOSITION service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__reposition(self, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
-        # sleep(20)   ########################################
-        self.req__reposition.lat = lat*1.
-        self.req__reposition.lon = lon*1.
-        self.req__reposition.alt = alt*1.
-        self.get_logger().info(f"> Calling REPOSITION (Lat:{self.req__reposition.lat}, Lon:{self.req__reposition.lon}, Alt:{self.req__reposition.alt})")
-        future = self.cli_srv__reposition.call_async(self.req__reposition)
-        rclpy.spin_until_future_complete(self, future)
-        sleep(15)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
         else:

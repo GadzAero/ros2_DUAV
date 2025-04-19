@@ -15,12 +15,12 @@ find_package(rosidl_default_generators REQUIRED)
 set(srv_file
   "srv/SetMode.srv"
   "srv/Arm.srv"
-  "srv/Reposition.srv"
   "srv/Rtl.srv"
   "srv/Disarm.srv"
 )
 set(act_file
   "action/Takeoff.action"
+  "action/Reposition.action"
   "action/Land.action"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}

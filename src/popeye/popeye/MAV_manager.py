@@ -14,8 +14,8 @@ import pymavlink.dialects.v20.common as mavlink
 from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
-from interfaces.srv import SetMode, Arm, Reposition, Rtl, Disarm
-from interfaces.action import Takeoff, Land
+from interfaces.srv import SetMode, Arm, Rtl, Disarm
+from interfaces.action import Takeoff, Land, Reposition
 # Import MAV utils
 import popeye.utils_MAV as mav_utils
 
@@ -57,6 +57,11 @@ class MAVManager(Node):
             self.mav_master.target_system, self.mav_master.target_component,
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
             245, 1e6, 0, 0, 0, 0, 0)
+        ## MISSION_CURRENT
+        self.mav_master.mav.command_long_send(
+            self.mav_master.target_system, self.mav_master.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            42, 1e6, 0, 0, 0, 0, 0)
         
         ### TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
         self.timer__all = self.create_timer(0.05, self.timer_cb__all, callback_group=MutuallyExclusiveCallbackGroup())
@@ -64,13 +69,14 @@ class MAVManager(Node):
         ### SERVICES (running them concurently to themselves or actions is useless)
         self.srv__set_mode   = self.create_service(SetMode,    'set_mode',   self.srv_cb__set_mode,   callback_group=MutuallyExclusiveCallbackGroup())
         self.srv__arm        = self.create_service(Arm,        'arm',        self.srv_cb__arm,        callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__reposition = self.create_service(Reposition, 'reposition', self.srv_cb__reposition, callback_group=MutuallyExclusiveCallbackGroup())
+        # self.srv__reposition = self.create_service(Reposition, 'reposition', self.srv_cb__reposition, callback_group=MutuallyExclusiveCallbackGroup())
         self.srv__rtl        = self.create_service(Rtl,        'rtl',        self.srv_cb__rtl,        callback_group=MutuallyExclusiveCallbackGroup())
         self.srv__disarm     = self.create_service(Disarm,     'disarm',     self.srv_cb__disarm,     callback_group=MutuallyExclusiveCallbackGroup())
         
         ### ACTIONS (running them concurently to themselves or services is useless)
-        self.act__takeoff = ActionServer(self, Takeoff, 'takeoff', self.act_cb__takeoff, callback_group=MutuallyExclusiveCallbackGroup())
-        self.act__land    = ActionServer(self, Land,       'land', self.act_cb__land,    callback_group=MutuallyExclusiveCallbackGroup())
+        self.act__takeoff    = ActionServer(self, Takeoff,    'takeoff',    self.act_cb__takeoff,    callback_group=MutuallyExclusiveCallbackGroup())
+        self.act__land       = ActionServer(self, Reposition, 'reposition', self.act_cb__reposition, callback_group=MutuallyExclusiveCallbackGroup())
+        self.act__reposition = ActionServer(self, Land,       'land',       self.act_cb__land,       callback_group=MutuallyExclusiveCallbackGroup())
         
         ### General Parameters
         ## Fire position
@@ -136,6 +142,8 @@ class MAVManager(Node):
             # self.elapsed_time += time.time()
             # print(f"LANDEDE_STATE:{self.landed_state} --- time:{self.elapsed_time:.5f} --- Nb msg:{self.nb_msg}/{(time.time()-self.start_time)/1:.0f}")
             # self.elapsed_time = -time.time()
+        elif msg_type == "MISSION_CURRENT":
+            self.get_logger().info(f"RECEIVED > {msg.to_dict()}")
 
     ############################################################################################################################################################################################################################
     ##### ACTIONS CALLBACK ############################################################################################################################################################################################################################
@@ -150,18 +158,36 @@ class MAVManager(Node):
             goal_handle.abort()
             return Takeoff.Result(success=False)
         
-        start_time = time.time()
         while self.landed_state != "MAV_LANDED_STATE_IN_AIR":
             goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.popeye_pos_alt, state=self.landed_state))
-            self.get_logger().info(f"      ... Taking off (Current_alt:{self.popeye_pos_alt}, State:{self.landed_state})")
-            if time.time()-start_time > 25:
-                self.get_logger().warning("      -> Failure: command has timed out")
-                goal_handle.abort()
-                return Takeoff.Result(success=False)
+            self.get_logger().info(f"      ... Taking off (current_alt:{self.popeye_pos_alt}, state:{self.landed_state})")
             sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
         return Takeoff.Result(success=True)
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Action server to REPOSITION  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def act_cb__reposition(self, goal_handle):
+        print()
+        self.get_logger().info(f"> Call action REPOSITION (lat:{goal_handle.request.lat}, lon:{goal_handle.request.lon}, alt:{goal_handle.request.alt})")
+        
+        if not mav_utils.mav_reposition(self.mav_master, goal_handle.request.lat, goal_handle.request.lon, goal_handle.request.alt):
+            self.get_logger().warning("      -> Failure: command not valid")
+            goal_handle.abort()
+            return Reposition.Result(success=False)
+        
+        time_at_position = 0; sleep_time = 1
+        tolerance = 3.005591509008809e-06
+        while time_at_position < 5:
+            dist_to_goal = ((goal_handle.request.lat-self.popeye_pos_lat)**2 + (goal_handle.request.lon-self.popeye_pos_lon)**2)**0.5
+            delta_alt    = goal_handle.request.alt-self.popeye_pos_alt
+            time_at_position = time_at_position+sleep_time if (dist_to_goal<=tolerance and delta_alt<0.15) else 0
+            goal_handle.publish_feedback(Reposition.Feedback(time_at_position=float(time_at_position), dist_to_goal=dist_to_goal))
+            self.get_logger().info(f"      ... Repositioning (dist_to_goal:{dist_to_goal}, delta_alt:{delta_alt:.1f}, time_at_position:{time_at_position})")
+            sleep(sleep_time)
+        self.get_logger().info("      -> Success")
+        goal_handle.succeed()
+        return Reposition.Result(success=True)
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to LAND  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__land(self, goal_handle):
@@ -173,14 +199,9 @@ class MAVManager(Node):
             goal_handle.abort()
             return Land.Result(success=False)
         
-        start_time = time.time()
         while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
             goal_handle.publish_feedback(Land.Feedback(current_alt=self.popeye_pos_alt, state=self.landed_state))
-            self.get_logger().info(f"      ... Landing (Current_alt:{self.popeye_pos_alt}, State:{self.landed_state})")
-            if time.time()-start_time > 40:
-                self.get_logger().warning("      -> Failure: command has timed out")
-                goal_handle.abort()
-                return Land.Result(success=False)
+            self.get_logger().info(f"      ... Landing (current_alt:{self.popeye_pos_alt}, state:{self.landed_state})")
             sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
