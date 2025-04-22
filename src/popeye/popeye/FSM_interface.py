@@ -84,20 +84,16 @@ class FSMInterface(Node):
             return False
         self.get_logger().info("       ... TAKEOFF goal accepted")
         
-        goal_handle = goal_handle_future.result()
-        action_future = goal_handle.get_result_async()
+        action_future = goal_handle_future.result().get_result_async()
         while not action_future.done():
             rclpy.spin_once(self, timeout_sec=0.5)
             if self.cancel_action:
-                cancel_future = goal_handle.cancel_goal_async()
+                cancel_future =  goal_handle_future.result().cancel_goal_async()
                 rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=0.5)
-                if cancel_future.result():
-                    self.get_logger().warning("       ==> TAKEOFF canceled")
-                    self.call__rtl()
-                    return False
-                else:
-                    self.get_logger().warning("       ==> Failed to cancel TAKEOFF")
-        # rclpy.spin_until_future_complete(self, action_future)
+                self.get_logger().warning("       ==> TAKEOFF canceled")
+                self.call__rtl()
+                return False
+            
         if not action_future.result().result.success:
             self.get_logger().warning("       ==> TAKEOFF failed")
             return False
@@ -154,6 +150,15 @@ class FSMInterface(Node):
         self.get_logger().info("       ... REPOSITION goal accepted")
         
         action_future = goal_handle_future.result().get_result_async()
+        while not action_future.done():
+            rclpy.spin_once(self, timeout_sec=0.5)
+            if self.cancel_action:
+                cancel_future =  goal_handle_future.result().cancel_goal_async()
+                rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=0.5)
+                self.get_logger().warning("       ==> REPOSITION canceled")
+                self.call__rtl()
+                return False
+            
         rclpy.spin_until_future_complete(self, action_future)
         if not action_future.result().result.success:
             self.get_logger().warning("       ==> REPOSITION failed")

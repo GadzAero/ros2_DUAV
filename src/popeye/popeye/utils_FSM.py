@@ -73,24 +73,33 @@ class PopeyeFSM(StateMachine):
         
     ###### MENUS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
     def menu_idle(self):
-        print("\n[FSM] ----------------- POPEYE MENU -----------------")
-        print("[FSM] 1- Workshop FireFighter")
-        print("[FSM] 2- Workshop 1")
-        print("[FSM] 0- Terminate POPEYE")
-        choice = input("\n[FSM] Select an option: ")
-        print("[FSM] -----------------------------------------------")
-        return choice
-        
+        while True:
+            print("\n[FSM] ----------------- POPEYE MENU -----------------")
+            print("[FSM] 1- Workshop FireFighter")
+            print("[FSM] 2- Workshop 1")
+            print("[FSM] 0- Terminate POPEYE")
+            choice = input("\n[FSM] Select an option: ")
+            print("[FSM] -----------------------------------------------")
+            if choice in "012":
+                PopeyeFSM.option = choice
+                break
+            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+    def menu_action(self):
+        while True:
+            print("\n[FSM] ----------------- CONTROL MENU -----------------")
+            print("[FSM] 0- Cancel Action")
+            choice = input("\n[FSM] Select an option: ")
+            print("[FSM] -----------------------------------------------")
+            if choice in "0":
+                break
+            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+            
         
     ###### STATE AND TRANSITION ACTIONS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
     ### Start and end states
     @idle.enter
     def on_enter__idle(self):
-        choice = self.menu_idle()
-        if choice == "1":
-            PopeyeFSM.option = int(choice)
-        else:
-            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+        self.menu_idle()
         self.send('event')
     @terminated.enter
     def on_enter__terminated(self):
@@ -115,33 +124,30 @@ class PopeyeFSM(StateMachine):
     @ws2__takeoffed.enter
     def ws2_on_enter__takeoff(self):
         print("\n[FSM] > TAKING OFF.")
-        takeoff = threading.Thread(target=lambda: self.node.call__takeoff(10), daemon=True)
-        menu    = threading.Thread(target=self.menu)
-        takeoff.start()
+        action = threading.Thread(target=self.node.call__takeoff, args=[5.])
+        menu   = threading.Thread(target=self.menu_action)
+        action.start()
         menu.start()
-        while takeoff.is_alive():
+        while action.is_alive():
             if not menu.is_alive():
                 self.node.cancel_action = True
-                print(self.node.cancel_action)
                 break
-            sleep(0.5)
-        self.send("event_WS2")
+            sleep(0.25)
         print("[FSM] > TAKEOFFED.")
-    def menu(self):
-        while True:
-            print("\n[FSM] ----------------- CONTROL MENU -----------------")
-            print("[FSM] 1- Cancel")
-            print("[FSM] 0- Terminate POPEYE")
-            choice = input("\n[FSM] Select an option: ")
-            if choice == "1":
-                break
-            else:
-                print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
-            print("[FSM] -----------------------------------------------")
+        self.send("event_WS2")
     @ws2__repositioned.enter
     def ws2_on_enter__repositioned(self):
         print("\n[FSM] > REPOSITIONING.")
-        self.node.call__reposition(self.ws2__lat, self.ws2__lon, self.ws2__alt)
+        # self.node.call__reposition(self.ws2__lat, self.ws2__lon, self.ws2__alt)
+        action = threading.Thread(target=self.node.call__reposition, args=[self.ws2__lat, self.ws2__lon, self.ws2__alt])
+        menu   = threading.Thread(target=self.menu_action)
+        action.start()
+        menu.start()
+        while action.is_alive():
+            if not menu.is_alive():
+                self.node.cancel_action = True
+                break
+            sleep(0.25)
         print("[FSM] > REPOSITIONED.")
         self.send("event_WS2")
     @ws2__fire_hydrant_dropped.enter
