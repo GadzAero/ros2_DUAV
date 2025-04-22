@@ -2,6 +2,7 @@
 
 # Import standard utils
 from time import sleep
+import threading
 # Import ROS2 utils
 import rclpy
 from rclpy.node import Node
@@ -13,6 +14,8 @@ from interfaces.action import Takeoff, Land, Reposition
 # Import FSM utils
 import popeye.utils_FSM as fsm
 from popeye.utils_MAV import DEFAULT_LAT, DEFAULT_LON, DEFAULT_ALT
+
+import asyncio
 
 #####################################################################################################################################################################
 ##### Node MAVLink Manager #####################################################################################################################################################################
@@ -43,11 +46,22 @@ class FSMInterface(Node):
         self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
         
+        ### Global prarams
+        self.cancel_action = False
+        
         ### Start the FSM
+        self.call__disarm(force=True)
+        self.get_logger().warn("BE CAREFUL : YOU HAVE TO COMMENT THIS ON REAL DRONE OR IT WILL CRASH")
         sm = fsm.PopeyeFSM(self)
         img_path = "/home/step/ros2_DUAV/src/popeye/popeye//POPEYE_FSM.png"
         sm._graph().write_png(img_path)
-        # self.call__reposition()
+        # self.result = None
+        # self.call__set_mode(mode='GUIDED')
+        # self.call__arm()
+        # self.goal_handle_future = self.call__takeoff()
+        # print("okkkk")
+        # while rclpy.ok():
+        #     rclpy.spin_once(self, timeout_sec=0.1)
     
     ############################################################################################################################################################################################################################
     ##### ACTIONS CLIENTS ############################################################################################################################################################################################################################
@@ -70,17 +84,58 @@ class FSMInterface(Node):
             return False
         self.get_logger().info("       ... TAKEOFF goal accepted")
         
-        action_future = goal_handle_future.result().get_result_async()
-        rclpy.spin_until_future_complete(self, action_future)
+        goal_handle = goal_handle_future.result()
+        action_future = goal_handle.get_result_async()
+        while not action_future.done():
+            rclpy.spin_once(self, timeout_sec=0.5)
+            if self.cancel_action:
+                cancel_future = goal_handle.cancel_goal_async()
+                rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=0.5)
+                if cancel_future.result():
+                    self.get_logger().warning("       ==> TAKEOFF canceled")
+                    self.call__rtl()
+                    return False
+                else:
+                    self.get_logger().warning("       ==> Failed to cancel TAKEOFF")
+        # rclpy.spin_until_future_complete(self, action_future)
         if not action_future.result().result.success:
             self.get_logger().warning("       ==> TAKEOFF failed")
             return False
         self.get_logger().info("       ==> TAKEOFF successful")
+        self.takeoff_results = True
         return True
+    # def call__takeoff(self, alt=DEFAULT_ALT):
+    #     self.get_logger().info(f"> Calling TAKEOFF action (alt:{alt})")
+
+    #     if not self.cli_act__takeoff.wait_for_server(timeout_sec=3.0):
+    #         self.get_logger().warn("       ... TAKEOFF action server not available")
+    #         return False
+    #     self.get_logger().info("       ... TAKEOFF action server available")
+
+    #     goal__takeoff = Takeoff.Goal()
+    #     goal__takeoff.alt = float(alt)
+    #     self.feedback_callback  = lambda feedback_msg: self.get_logger().info(f"       ... Feedback (current_alt:{feedback_msg.feedback.current_alt:.1f}, state:{feedback_msg.feedback.state})")
+    #     self.goal_handle_future = self.cli_act__takeoff.send_goal_async(goal__takeoff, feedback_callback=self.feedback_callback)
+    #     self.goal_handle_future.add_done_callback(self.takeoff__handle_goal_response)
+
+    #     return self.goal_handle_future
+    # def takeoff__handle_goal_response(self, future):
+    #     goal_handle = future.result()
+    #     if not goal_handle.accepted:
+    #         self.get_logger().warn("       ... TAKEOFF goal rejected")
+    #         return
+    #     self.get_logger().info("       ... TAKEOFF goal accepted")
+    #     goal_handle.get_result_async().add_done_callback(self.takeoff__handle_takeoff_result)
+    # def takeoff__handle_takeoff_result(self, future):
+    #     self.result = future.result().result
+    #     if not self.result.success:
+    #         self.get_logger().warning("       ==> TAKEOFF failed")
+    #         return
+    #     self.get_logger().info("       ==> TAKEOFF successful")
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the REPOSITION action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__reposition(self, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
-        self.get_logger().info(f"> Calling REPOSITION action (alt:{alt})")
+        self.get_logger().info(f"> Calling REPOSITION action (lat:{lat}, lon:{lon}, alt:{alt})")
         if not self.cli_act__reposition.wait_for_server(timeout_sec=3.0):
             self.get_logger().warn("       ... REPOSITION action server not available")
             return False
@@ -190,8 +245,8 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = FSMInterface()
-    # executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
-    executor = rclpy.executors.SingleThreadedExecutor()
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
+    # executor = rclpy.executors.SingleThreadedExecutor()
     executor.add_node(node)
     try:
         executor.spin()
