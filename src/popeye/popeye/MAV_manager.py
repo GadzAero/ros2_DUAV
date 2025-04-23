@@ -14,7 +14,7 @@ import pymavlink.dialects.v20.common as mavlink
 from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
-from interfaces.srv import SetMode, Arm, Rtl, Disarm
+from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
 # Import MAV utils
 import popeye.utils_MAV as mav_utils
@@ -69,7 +69,7 @@ class MAVManager(Node):
         ### SERVICES (running them concurently to themselves or actions is useless)
         self.srv__set_mode   = self.create_service(SetMode,    'set_mode',   self.srv_cb__set_mode,   callback_group=MutuallyExclusiveCallbackGroup())
         self.srv__arm        = self.create_service(Arm,        'arm',        self.srv_cb__arm,        callback_group=MutuallyExclusiveCallbackGroup())
-        # self.srv__reposition = self.create_service(Reposition, 'reposition', self.srv_cb__reposition, callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__rtl        = self.create_service(Drop,       'drop',       self.srv_cb__drop,       callback_group=MutuallyExclusiveCallbackGroup())
         self.srv__rtl        = self.create_service(Rtl,        'rtl',        self.srv_cb__rtl,        callback_group=MutuallyExclusiveCallbackGroup())
         self.srv__disarm     = self.create_service(Disarm,     'disarm',     self.srv_cb__disarm,     callback_group=MutuallyExclusiveCallbackGroup())
         
@@ -93,6 +93,11 @@ class MAVManager(Node):
         ### Timers for debug 
         self.elapsed_time = -time.time()
         self.start_time = time.time()
+        
+        # mav_utils.mav_set_mode(self.mav_master, 'GUIDED')
+        # mav_utils.mav_arm(self.mav_master)
+        # sleep(0.5)
+        # mav_utils.mav_drop(self.mav_master)
         
     ############################################################################################################################################################################################################################
     ##### TIMER CALLBACK ############################################################################################################################################################################################################################
@@ -213,7 +218,7 @@ class MAVManager(Node):
     #----- Service server to SET MODE ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def srv_cb__set_mode(self, request, response):
         print()
-        self.get_logger().info(f"> Call service SET_MODE (Mode:{request.mode_name})")
+        self.get_logger().info(f"> Call service SET_MODE (mode:{request.mode_name})")
         if mav_utils.mav_set_mode(self.mav_master, request.mode_name):
             response.success = True
             self.get_logger().info("      -> Success.")
@@ -225,8 +230,20 @@ class MAVManager(Node):
     #----- Service server to ARM ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def srv_cb__arm(self, request, response):
         print()
-        self.get_logger().info(f"> Call service ARM (Force:{request.force})")
+        self.get_logger().info(f"> Call service ARM (force:{request.force})")
         if mav_utils.mav_arm(self.mav_master, request.force):
+            response.success = True
+            self.get_logger().info("      -> Success.")
+        else:
+            response.success = False
+            self.get_logger().warning("      -> Failure")
+        return response
+    #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Service server to DROP ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def srv_cb__drop(self, request, response):
+        print()
+        self.get_logger().info(f"> Call service DROP")
+        if mav_utils.mav_drop(self.mav_master):
             response.success = True
             self.get_logger().info("      -> Success.")
         else:
@@ -261,7 +278,7 @@ class MAVManager(Node):
     #----- Service server to DISARM ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def srv_cb__disarm(self, request, response):
         print()
-        self.get_logger().info(f"> Call service DISARM (Force:{request.force})")
+        self.get_logger().info(f"> Call service DISARM (force:{request.force})")
         if mav_utils.mav_disarm(self.mav_master, request.force):
             response.success = True
             self.get_logger().info("      -> Success.")

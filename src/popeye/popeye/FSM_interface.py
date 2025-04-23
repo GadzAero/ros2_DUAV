@@ -9,7 +9,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 # Import Intefaces
-from interfaces.srv import SetMode, Arm, Rtl, Disarm
+from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
 # Import FSM utils
 import popeye.utils_FSM as fsm
@@ -100,34 +100,6 @@ class FSMInterface(Node):
         self.get_logger().info("       ==> TAKEOFF successful")
         self.takeoff_results = True
         return True
-    # def call__takeoff(self, alt=DEFAULT_ALT):
-    #     self.get_logger().info(f"> Calling TAKEOFF action (alt:{alt})")
-
-    #     if not self.cli_act__takeoff.wait_for_server(timeout_sec=3.0):
-    #         self.get_logger().warn("       ... TAKEOFF action server not available")
-    #         return False
-    #     self.get_logger().info("       ... TAKEOFF action server available")
-
-    #     goal__takeoff = Takeoff.Goal()
-    #     goal__takeoff.alt = float(alt)
-    #     self.feedback_callback  = lambda feedback_msg: self.get_logger().info(f"       ... Feedback (current_alt:{feedback_msg.feedback.current_alt:.1f}, state:{feedback_msg.feedback.state})")
-    #     self.goal_handle_future = self.cli_act__takeoff.send_goal_async(goal__takeoff, feedback_callback=self.feedback_callback)
-    #     self.goal_handle_future.add_done_callback(self.takeoff__handle_goal_response)
-
-    #     return self.goal_handle_future
-    # def takeoff__handle_goal_response(self, future):
-    #     goal_handle = future.result()
-    #     if not goal_handle.accepted:
-    #         self.get_logger().warn("       ... TAKEOFF goal rejected")
-    #         return
-    #     self.get_logger().info("       ... TAKEOFF goal accepted")
-    #     goal_handle.get_result_async().add_done_callback(self.takeoff__handle_takeoff_result)
-    # def takeoff__handle_takeoff_result(self, future):
-    #     self.result = future.result().result
-    #     if not self.result.success:
-    #         self.get_logger().warning("       ==> TAKEOFF failed")
-    #         return
-    #     self.get_logger().info("       ==> TAKEOFF successful")
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the REPOSITION action  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__reposition(self, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
@@ -218,7 +190,17 @@ class FSMInterface(Node):
             self.get_logger().info(f"     -> Successful")
         else:
             self.get_logger().warning(f"     -> Failed")
-            
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Function to call the DROP service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__drop(self, force=False):
+        self.req__drop.force = force
+        self.get_logger().info(f"> Calling ARM (Force:{self.req__drop.force})")
+        future = self.cli_srv__drop.call_async(self.req__drop)
+        rclpy.spin_until_future_complete(self, future)
+        if future.result().success:
+            self.get_logger().info(f"     -> Successful")
+        else:
+            self.get_logger().warning(f"     -> Failed")
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the RTL service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__rtl(self):
@@ -230,7 +212,6 @@ class FSMInterface(Node):
             self.get_logger().info(f"     -> Successful")
         else:
             self.get_logger().warning(f"     -> Failed")
-            
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the DISARM service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__disarm(self, force=False):

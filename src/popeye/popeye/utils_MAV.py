@@ -2,6 +2,7 @@
 
 # Import General utils
 from popeye.utils_PARAMS import *
+from time import sleep
 # from utils_PARAMS import *
 # Import ROS2 utils
 from rclpy.node import Node
@@ -83,6 +84,31 @@ def mav_land(master):
     ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_LAND] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
+        return False
+    return True
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#----- Function to DROP ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+def mav_drop(master):
+    ### Send the command
+    master.mav.command_long_send(
+        master.target_system, master.target_component,
+        mavkit.MAV_CMD_DO_SET_SERVO, 0, 
+        9, 850, 0, 0, 0, 0, 0)
+    ### Receive acknologment
+    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
+        print(f"{RED}[MAV_DROP] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
+        return False
+    sleep(1)
+    master.mav.command_long_send(
+        master.target_system, master.target_component,
+        mavkit.MAV_CMD_DO_SET_SERVO, 0, 
+        9, 2550, 0, 0, 0, 0, 0)
+    ### Receive acknologment
+    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
+        print(f"{RED}[MAV_DROP] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
     return True
 

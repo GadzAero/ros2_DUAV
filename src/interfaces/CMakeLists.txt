@@ -15,6 +15,7 @@ find_package(rosidl_default_generators REQUIRED)
 set(srv_file
   "srv/SetMode.srv"
   "srv/Arm.srv"
+  "srv/Drop.srv"
   "srv/Rtl.srv"
   "srv/Disarm.srv"
 )

@@ -153,7 +153,7 @@ class PopeyeFSM(StateMachine):
     @ws2__fire_hydrant_dropped.enter
     def ws2_on_enter__dropped(self):
         print("\n[FSM] > DROPPING.")
-        # self.node.call__drop(self)
+        self.node.call__drop(self)
         print("[FSM] > DROPPED.")
         self.send("event_WS2")
     @ws2__rtl.enter
