@@ -4,7 +4,7 @@
 
 # Import general params
 from time import sleep
-from popeye.utils_PARAMS import *
+from popeye.PARAMS_utils import *
 import multiprocessing
 import threading
 # Import ROS2 utils
@@ -109,9 +109,12 @@ class PopeyeFSM(StateMachine):
     @ws2__wait_for_GPS_coor.enter
     def ws2_on_enter__wait_for_GPS_coor(self):
         print("[FSM] > WAIT FOR TARGET COORDONATES.")
-        self.ws2__lon = DEFAULT_LON
-        self.ws2__lat = DEFAULT_LAT
-        self.ws2__alt = DEFAULT_ALT
+        while not self.node.is_fire:
+            continue
+        self.ws2__lat = self.node.lat_fire
+        self.ws2__lon = self.node.lon_fire
+        self.ws2__alt = 2.
+        print(f"{YELLOW}[FSM] > FIRE SPOTTED > LAT:{self.ws2__lat} LON:{self.ws2__lon}.{RESET}")
         print("[FSM] > TARGET COORDONATES ACQUIRED.")
         self.send("event_WS2")
     @ws2__ready.enter
@@ -124,7 +127,7 @@ class PopeyeFSM(StateMachine):
     @ws2__takeoffed.enter
     def ws2_on_enter__takeoff(self):
         print("\n[FSM] > TAKING OFF.")
-        action = threading.Thread(target=self.node.call__takeoff, args=[5.])
+        action = threading.Thread(target=self.node.call__takeoff, args=[6.])
         menu   = threading.Thread(target=self.menu_action)
         action.start()
         menu.start()
@@ -153,7 +156,7 @@ class PopeyeFSM(StateMachine):
     @ws2__fire_hydrant_dropped.enter
     def ws2_on_enter__dropped(self):
         print("\n[FSM] > DROPPING.")
-        self.node.call__drop(self)
+        self.node.call__drop()
         print("[FSM] > DROPPED.")
         self.send("event_WS2")
     @ws2__rtl.enter
@@ -168,8 +171,8 @@ class PopeyeFSM(StateMachine):
     def ws1_on_enter__ready(self):
         print("\n[FSM] > GETTING READY.")
         print("[FSM] ----------------- CHOSE REPOSITION COORDONATES -----------------")
-        self.ws1__lon = float(input("[FSM] Lon: "))
         self.ws1__lat = float(input("[FSM] Lat: "))
+        self.ws1__lon = float(input("[FSM] Lon: "))
         self.ws1__alt = float(input("[FSM] Alt: "))
         print("[FSM] ----------------------------------------------------------------")
         self.node.call__set_mode("GUIDED")
@@ -179,7 +182,7 @@ class PopeyeFSM(StateMachine):
     @ws1__takeoffed.enter
     def ws1_on_enter__takeoff(self):
         print("\n[FSM] > TAKING OFF.")
-        self.node.call__takeoff(10)
+        self.node.call__takeoff(6)
         self.send("event_WS1")
         print("[FSM] > TAKEOFFED.")
     @ws1__repositioned.enter

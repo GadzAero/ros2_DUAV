@@ -24,9 +24,13 @@ set(act_file
   "action/Reposition.action"
   "action/Land.action"
 )
+set(msg_file
+  "msg/Fire.msg"
+)
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_file}
   ${act_file}
+  ${msg_file}
 )
 ament_export_dependencies(rosidl_default_runtime)
 

@@ -11,9 +11,10 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
+from interfaces.msg import Fire
 # Import FSM utils
-import popeye.utils_FSM as fsm
-from popeye.utils_MAV import DEFAULT_LAT, DEFAULT_LON, DEFAULT_ALT
+import popeye.FSM_utils as fsm
+from popeye.PARAMS_utils import *
 
 import asyncio
 
@@ -22,46 +23,64 @@ import asyncio
 class FSMInterface(Node):
     def __init__(self):
         super().__init__('FSM_interface', namespace='POPEYE')
-        self.get_logger().info("NODE FSM_interface STARTED.")
         
-        ### Services clients
-        self.cli_srv__set_mode   = self.create_client(SetMode,    'set_mode',   callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__arm        = self.create_client(Arm,        'arm',        callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__rtl        = self.create_client(Rtl,        'rtl',        callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__disarm     = self.create_client(Disarm,     'disarm',     callback_group=MutuallyExclusiveCallbackGroup())
-        while (not self.cli_srv__set_mode.      wait_for_service(timeout_sec=1.0)
-                or not self.cli_srv__arm.       wait_for_service(timeout_sec=1.0)
-                # or not self.cli_srv__reposition.wait_for_service(timeout_sec=1.0)
-                or not self.cli_srv__rtl.       wait_for_service(timeout_sec=1.0)
-                or not self.cli_srv__disarm.    wait_for_service(timeout_sec=1.0)):
-            self.get_logger().warning('Service(s) not available, waiting again...')
-        self.req__set_mode = SetMode.Request()
-        self.req__arm        = Arm.Request()
-        # self.req__reposition = Reposition.Request()
-        self.req__rtl        = Rtl.Request()
-        self.req__disarm     = Disarm.Request() 
+        ### Global prarams
+        self.cancel_action = False
+        self.is_fire = False
         
-        ### Actions clients
+        ### SERVICE CLIENTS
+        self.cli_srv__set_mode = self.create_client(SetMode, 'set_mode', callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__arm      = self.create_client(Arm,     'arm',      callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__drop     = self.create_client(Drop,    'drop',     callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__rtl      = self.create_client(Rtl,     'rtl',      callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__disarm   = self.create_client(Disarm,  'disarm',   callback_group=MutuallyExclusiveCallbackGroup())
+        
+        ### ACTIONS CLIENTS
         self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
         
-        ### Global prarams
-        self.cancel_action = False
+        ### SUBSCRIBERS
+        self.sub__fire = self.create_subscription(Fire, 'fire', self.sub_cb__fire, 10, callback_group=MutuallyExclusiveCallbackGroup())
         
+        ### TIMERS 
+        self.timer__fsm = self.create_timer(0.1, self.timer_cb__fsm)
+        
+        self.get_logger().info(" > NODE FSM_interface STARTED.")
+    
+    ############################################################################################################################################################################################################################
+    ##### TIMERS CALLBACKS ############################################################################################################################################################################################################################
+    def timer_cb__fsm(self):
         ### Start the FSM
-        self.call__disarm(force=True)
-        self.get_logger().warn("BE CAREFUL : YOU HAVE TO COMMENT THIS ON REAL DRONE OR IT WILL CRASH")
+        if True:
+            self.call__disarm(force=True)
+            self.get_logger().warn("*********************************************")
+            self.get_logger().warn("*********************************************")
+            self.get_logger().warn("*********************************************")
+            self.get_logger().error("BE CAREFUL : YOU HAVE TO COMMENT THIS ON REAL DRONE OR IT WILL CRASH (on sim it is ok)")
+            self.get_logger().warn("*********************************************")
+            self.get_logger().warn("*********************************************")
+            self.get_logger().warn("*********************************************")
+        self.get_logger().info(" > FSM started.")
+        ### Starting the FSM
         sm = fsm.PopeyeFSM(self)
+        ### Save the FSM graph and destry the timer
         img_path = "/home/step/ros2_DUAV/src/popeye/popeye//POPEYE_FSM.png"
         sm._graph().write_png(img_path)
-        # self.result = None
-        # self.call__set_mode(mode='GUIDED')
-        # self.call__arm()
-        # self.goal_handle_future = self.call__takeoff()
-        # print("okkkk")
-        # while rclpy.ok():
-        #     rclpy.spin_once(self, timeout_sec=0.1)
+        self.get_logger().warn(" > FSM ended.")
+        self.destroy_timer(self.timer__fsm)
+    
+    ############################################################################################################################################################################################################################
+    ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
+    def sub_cb__fire(self, msg):
+        if msg.is_fire and not self.is_fire:
+            self.is_fire  = True
+            self.lat_fire = msg.lat_fire
+            self.lon_fire = msg.lon_fire
+            print()
+            self.get_logger().warn(" >>> FIRE HAS BEEN SPOTTED <<<")
+            self.get_logger().warn(f" >>> FIRE_LAT:{self.lat_fire} FIRE_LON:{self.lon_fire}<<<")
+            print()
     
     ############################################################################################################################################################################################################################
     ##### ACTIONS CLIENTS ############################################################################################################################################################################################################################
@@ -168,12 +187,15 @@ class FSMInterface(Node):
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the SET_MODE service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__set_mode(self, mode='RTL'):
-        self.req__set_mode.mode_name = mode
-        self.get_logger().info(f"> Calling SET_MODE (Force:{self.req__set_mode.mode_name})")
-        while not self.cli_srv__set_mode.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warning('Service SET_MODE not available, waiting again...')
-        future = self.cli_srv__set_mode.call_async(self.req__set_mode)
-        
+        self.get_logger().info(f"> Calling SET_MODE (mode:{mode})")
+        if not self.cli_srv__set_mode.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not availabl.')
+            return False
+        self.get_logger().info("       ... SET_MODE service available")
+            
+        request           = SetMode.Request()
+        request.mode_name = mode
+        future            = self.cli_srv__set_mode.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
@@ -182,9 +204,15 @@ class FSMInterface(Node):
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the ARM service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__arm(self, force=False):
-        self.req__arm.force = force
-        self.get_logger().info(f"> Calling ARM (Force:{self.req__arm.force})")
-        future = self.cli_srv__arm.call_async(self.req__arm)
+        self.get_logger().info(f"> Calling ARM (force:{force})")
+        if not self.cli_srv__arm.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not available.')
+            return False
+        self.get_logger().info("       ... ARM service available")
+        
+        request       = Arm.Request()
+        request.force = force
+        future        = self.cli_srv__arm.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
@@ -192,10 +220,15 @@ class FSMInterface(Node):
             self.get_logger().warning(f"     -> Failed")
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the DROP service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__drop(self, force=False):
-        self.req__drop.force = force
-        self.get_logger().info(f"> Calling ARM (Force:{self.req__drop.force})")
-        future = self.cli_srv__drop.call_async(self.req__drop)
+    def call__drop(self):
+        self.get_logger().info(f"> Calling DROP ")
+        if not self.cli_srv__drop.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not available.')
+            return False
+        self.get_logger().info("       ... DROP service available")
+        
+        request = Drop.Request()
+        future  = self.cli_srv__drop.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
@@ -205,9 +238,14 @@ class FSMInterface(Node):
     #----- Function to call the RTL service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__rtl(self):
         self.get_logger().info("> Calling RTL.")
-        future = self.cli_srv__rtl.call_async(self.req__rtl)
+        if not self.cli_srv__rtl.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not available.')
+            return False
+        self.get_logger().info("       ... RTL service available")
+        
+        request = Rtl.Request()
+        future  = self.cli_srv__rtl.call_async(request)
         rclpy.spin_until_future_complete(self, future)
-        # sleep(30)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
         else:
@@ -215,8 +253,14 @@ class FSMInterface(Node):
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the DISARM service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def call__disarm(self, force=False):
+        self.get_logger().info(f"> Calling DISARM (force:{force})")
+        if not self.cli_srv__disarm.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not available.')
+            return False
+        self.get_logger().info("       ... DISARM service available")
+        
+        self.req__disarm     = Disarm.Request() 
         self.req__disarm.force = force
-        self.get_logger().info(f"> Calling DISARM (Force:{self.req__disarm.force})")
         future = self.cli_srv__disarm.call_async(self.req__disarm)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
@@ -224,7 +268,7 @@ class FSMInterface(Node):
         else:
             self.get_logger().warning(f"     -> Failed")
         
-#####################################################################################################################################################################
+#########################################################################################################################################################################################################
 ##### Node entry point #####################################################################################################################################################################
 def main(args=None):
     rclpy.init(args=args)

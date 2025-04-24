@@ -16,8 +16,9 @@ from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
+from interfaces.msg import Fire
 # Import MAV utils
-import popeye.utils_MAV as mav_utils
+import popeye.MAV_utils as mav_utils
 
 ############################################################################################################################################################################################################################
 ##### Node MAVLink Manager ############################################################################################################################################################################################################################
@@ -78,16 +79,11 @@ class MAVManager(Node):
         self.act__land       = ActionServer(self, Reposition, 'reposition', self.act_cb__reposition, callback_group=MutuallyExclusiveCallbackGroup())
         self.act__reposition = ActionServer(self, Land,       'land',       self.act_cb__land,       callback_group=MutuallyExclusiveCallbackGroup())
         
+        ### PUBLISHERS 
+        self.pub__fire_coor = self.create_publisher(Fire, 'fire', 10)
+        
         ### General Parameters
-        ## Fire position
-        self.fire_pos_lat = None
-        self.fire_pos_lon = None
-        ## Popeye position
-        self.popeye_pos_lat = None
-        self.popeye_pos_lon = None
-        self.popeye_pos_alt = None
         ## Popeye state
-        self.nb_msg = 0
         self.landed_state = ""
         
         ### Timers for debug 
@@ -118,11 +114,19 @@ class MAVManager(Node):
         msg_type = msg.get_type()
         ## For TEXT messages
         if msg_type == "STATUSTEXT":
-            self.get_logger().info('RECEIVED > %s' % msg.text)
             if 'FIRE' in msg.text:
                 data = msg.text.split()
+                self.is_fire = True
                 self.fire_pos_lat = float(data[1])
                 self.fire_pos_lon = float(data[3])
+                msg = Fire()
+                msg.is_fire  = self.is_fire
+                msg.lat_fire = self.fire_pos_lat
+                msg.lon_fire = self.fire_pos_lon
+                self.pub__fire_coor.publish(msg)
+                # self.get_logger().info(f"FIRE > Fire_lat: {self.fire_pos_lat} Fire_lon: {self.fire_pos_lon} Is_fire: {self.is_fire}")
+            else:
+                self.get_logger().info('RECEIVED > %s' % msg.text)
         ## For GLOBAL_POSITION_INT messages
         elif msg_type == "GLOBAL_POSITION_INT":
             self.popeye_pos_lat = msg.lat/1e7
@@ -187,7 +191,7 @@ class MAVManager(Node):
             dist_to_goal = ((goal_handle.request.lat-self.popeye_pos_lat)**2 + (goal_handle.request.lon-self.popeye_pos_lon)**2)**0.5
             delta_alt    = goal_handle.request.alt-self.popeye_pos_alt
             time_at_position = time_at_position+sleep_time if (dist_to_goal<=tolerance and delta_alt<0.15) else 0
-            goal_handle.publish_feedback(Reposition.Feedback(time_at_position=float(time_at_position), dist_to_goal=dist_to_goal))
+            goal_handle.publish_feedback(Reposition.Feedback(time_at_position=float(time_at_position), dist_to_goal=dist_to_goal, delta_alt=delta_alt))
             self.get_logger().info(f"      ... Repositioning (dist_to_goal:{dist_to_goal}, delta_alt:{delta_alt:.1f}, time_at_position:{time_at_position})")
             sleep(sleep_time)
         self.get_logger().info("      -> Success")
@@ -294,7 +298,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = MAVManager()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
     executor.add_node(node)
     try:
         executor.spin()

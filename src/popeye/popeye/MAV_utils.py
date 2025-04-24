@@ -1,9 +1,8 @@
 # Standard commands : https://mavlink.io/en/services/command.html
 
 # Import General utils
-from popeye.utils_PARAMS import *
+from popeye.PARAMS_utils import *
 from time import sleep
-# from utils_PARAMS import *
 # Import ROS2 utils
 from rclpy.node import Node
 # Import MAVLink utils
@@ -110,6 +109,7 @@ def mav_drop(master):
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_DROP] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
+    sleep(2)
     return True
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

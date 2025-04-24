@@ -23,9 +23,9 @@ class AnalyseCAM(Node):
     def tc_GPS_fire_coor(self):
         # Création du message GPSData
         gps_message = GeoPoint()
-        gps_message.latitude = self.latitude
-        gps_message.longitude = self.longitude
-        gps_message.altitude = self.altitude
+        gps_message.latitude = 48.6148#self.latitude
+        gps_message.longitude = 2.3974#self.longitude
+        gps_message.altitude = 10.#self.altitude
 
         # Debug
         self.latitude += 0.001
