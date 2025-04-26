@@ -16,13 +16,11 @@ from interfaces.msg import Fire
 import popeye.FSM__utils as fsm
 from popeye.PARAMS_utils import *
 
-import asyncio
-
 #####################################################################################################################################################################
 ##### Node MAVLink Manager #####################################################################################################################################################################
-class FSMInterface(Node):
+class FSMInterfaceNode(Node):
     def __init__(self):
-        super().__init__('FSM_interface', namespace='POPEYE')
+        super().__init__('FSM_interface_node', namespace='POPEYE')
         
         ### Global prarams
         self.cancel_action = False
@@ -40,7 +38,7 @@ class FSMInterface(Node):
         self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
         
-        ### SUBSCRIBERS
+        ### SUBSCRIBERS 
         self.sub__fire = self.create_subscription(Fire, 'fire', self.sub_cb__fire, 10, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### TIMERS 
@@ -274,7 +272,7 @@ def main(args=None):
     rclpy.init(args=args)
     
     ### Creating the mutlithread executor
-    node = FSMInterface()
+    node = FSMInterfaceNode()
     executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
     executor.add_node(node)
     try:
