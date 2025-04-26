@@ -22,9 +22,9 @@ import popeye.MAV_manager__utils as mav_utils
 
 ############################################################################################################################################################################################################################
 ##### Node MAVLink Manager ############################################################################################################################################################################################################################
-class MAVManager(Node):
+class MAVManagerNode(Node):
     def __init__(self):
-        super().__init__('MAV_manager', namespace='POPEYE')
+        super().__init__('MAV_manager_node', namespace='POPEYE')
         self.get_logger().info("NODE MAV_manager STARTED.")
 
         ### Connexion to MAVLink
@@ -293,7 +293,7 @@ def main(args=None):
     rclpy.init(args=args)
     
     ### Creating the mutlithread executor
-    node = MAVManager()
+    node = MAVManagerNode()
     executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
     executor.add_node(node)
     try:
