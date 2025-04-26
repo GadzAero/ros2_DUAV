@@ -16,7 +16,7 @@ from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
-from interfaces.msg import Fire
+from interfaces.msg import Fire, UavAttitude, UavPosition 
 # Import MAV utils
 import popeye.MAV_utils as mav_utils
 
@@ -63,6 +63,11 @@ class MAVManager(Node):
             self.mav_master.target_system, self.mav_master.target_component,
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
             42, 1e6, 0, 0, 0, 0, 0)
+        ## ATTITUDE
+        self.mav_master.mav.command_long_send(
+            self.mav_master.target_system, self.mav_master.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            30, 1e6, 0, 0, 0, 0, 0)
         
         ### TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
         self.timer__read_mavlink = self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
@@ -80,8 +85,9 @@ class MAVManager(Node):
         self.act__reposition = ActionServer(self, Land,       'land',       self.act_cb__land,       callback_group=MutuallyExclusiveCallbackGroup())
         
         ### PUBLISHERS 
-        self.pub__fire_coor = self.create_publisher(Fire, 'fire', 10)
-        self.pub__fire_coor = self.create_publisher(Fire, 'uav_gps_pos', 10)
+        self.pub__fire_coor = self.create_publisher(Fire,        'fire',     10)
+        self.pub__attitude  = self.create_publisher(UavAttitude, 'attitude', 10)
+        self.pub__position  = self.create_publisher(UavPosition, 'position', 10)
         
         ### General Parameters
         ## Popeye state
@@ -128,7 +134,12 @@ class MAVManager(Node):
             self.popeye_pos_lat = msg.lat/1e7
             self.popeye_pos_lon = msg.lon/1e7
             self.popeye_pos_alt = msg.relative_alt/1e3
-            # self.get_logger().info(f"RECEIVED > Lat: {self.popeye_pos_lat} Lon: {self.popeye_pos_lon} Alt: {self.popeye_pos_alt}")
+            msg_pub     = UavPosition()
+            msg_pub.lat = self.popeye_pos_lat
+            msg_pub.lon = self.popeye_pos_lon
+            msg_pub.alt = self.popeye_pos_alt
+            self.pub__position.publish(msg_pub)
+            self.get_logger().info(f"RECEIVED > Lat: {self.popeye_pos_lat} Lon: {self.popeye_pos_lon} Alt: {self.popeye_pos_alt}")
         ## For LANDED_STATE messages
         elif msg_type == "EXTENDED_SYS_STATE":
             landed_state_id = msg.landed_state
@@ -149,6 +160,17 @@ class MAVManager(Node):
             # self.elapsed_time = -time.time()
         elif msg_type == "MISSION_CURRENT":
             self.get_logger().info(f"RECEIVED > {msg.to_dict()}")
+        ## For ATTITUDE messages
+        elif msg_type == "ATTITUDE":
+            self.roll  = msg.roll
+            self.pitch = msg.pitch
+            self.yaw   = msg.yaw
+            msg_pub       = UavAttitude()
+            msg_pub.yaw   = self.yaw
+            msg_pub.pitch = self.pitch
+            msg_pub.roll  = self.roll
+            self.pub__attitude.publish(msg_pub)
+            self.get_logger().info(f"RECEIVED > Yaw: {self.yaw} Pitch: {self.pitch} Roll: {self.roll}")
 
     ############################################################################################################################################################################################################################
     ##### ACTIONS CALLBACK ############################################################################################################################################################################################################################
