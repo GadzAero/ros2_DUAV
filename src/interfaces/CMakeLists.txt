@@ -26,6 +26,8 @@ set(act_file
 )
 set(msg_file
   "msg/Fire.msg"
+  "msg/UavPosition.msg"
+  "msg/UavAttitude.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_file}

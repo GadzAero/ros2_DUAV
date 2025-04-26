@@ -65,7 +65,7 @@ class MAVManager(Node):
             42, 1e6, 0, 0, 0, 0, 0)
         
         ### TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
-        self.timer__all = self.create_timer(0.05, self.timer_cb__all, callback_group=MutuallyExclusiveCallbackGroup())
+        self.timer__read_mavlink = self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### SERVICES (running them concurently to themselves or actions is useless)
         self.srv__set_mode   = self.create_service(SetMode,    'set_mode',   self.srv_cb__set_mode,   callback_group=MutuallyExclusiveCallbackGroup())
@@ -81,6 +81,7 @@ class MAVManager(Node):
         
         ### PUBLISHERS 
         self.pub__fire_coor = self.create_publisher(Fire, 'fire', 10)
+        self.pub__fire_coor = self.create_publisher(Fire, 'uav_gps_pos', 10)
         
         ### General Parameters
         ## Popeye state
@@ -99,7 +100,7 @@ class MAVManager(Node):
     ##### TIMER CALLBACK ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to reiceive ALL  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def timer_cb__all(self):
+    def timer_cb__read_mavlink(self):
         ### Receive Mavlink messages
         msg = self.mav_master.recv_match(type=['EXTENDED_SYS_STATE', 'STATUSTEXT', 'GLOBAL_POSITION_INT'], blocking=False)
         if msg is None:
@@ -114,11 +115,11 @@ class MAVManager(Node):
                 self.is_fire = True
                 self.fire_pos_lat = float(data[1])
                 self.fire_pos_lon = float(data[3])
-                msg = Fire()
-                msg.is_fire  = self.is_fire
-                msg.lat_fire = self.fire_pos_lat
-                msg.lon_fire = self.fire_pos_lon
-                self.pub__fire_coor.publish(msg)
+                msg_pub = Fire()
+                msg_pub.is_fire  = self.is_fire
+                msg_pub.lat_fire = self.fire_pos_lat
+                msg_pub.lon_fire = self.fire_pos_lon
+                self.pub__fire_coor.publish(msg_pub)
                 # self.get_logger().info(f"FIRE > Fire_lat: {self.fire_pos_lat} Fire_lon: {self.fire_pos_lon} Is_fire: {self.is_fire}")
             else:
                 self.get_logger().info('RECEIVED > %s' % msg.text)
@@ -126,7 +127,7 @@ class MAVManager(Node):
         elif msg_type == "GLOBAL_POSITION_INT":
             self.popeye_pos_lat = msg.lat/1e7
             self.popeye_pos_lon = msg.lon/1e7
-            self.popeye_pos_alt = msg.alt/1e3
+            self.popeye_pos_alt = msg.relative_alt/1e3
             # self.get_logger().info(f"RECEIVED > Lat: {self.popeye_pos_lat} Lon: {self.popeye_pos_lon} Alt: {self.popeye_pos_alt}")
         ## For LANDED_STATE messages
         elif msg_type == "EXTENDED_SYS_STATE":

@@ -33,19 +33,17 @@ class PopeyeFSM(StateMachine):
     
     ### Workshop 1
     ws1__select_coord = State('ws1__SelectCoords')
-    # ws1__repositioned  = State('WS1__Repositioned')
-    ws1__landed        = State('WS1__Landed')
+    ws1__landed       = State('WS1__Landed')
     
     ### Workshop 2
     ws2__wait_for_GPS_coord   = State('WS2__WaitForGPSCoord')
-    # ws2__repositioned         = State('WS2__Repositioned')
+    ws2__get_fire_pos         = State('WS2__GetFirePos')
     ws2__fire_hydrant_dropped = State('WS2__FireHydrantDropped')
     ws2__rtl                  = State('WS2__Rtl')
 
     ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
-    ### Start and end events
-    event = Event(idle.to(terminated, cond=lambda: PopeyeFSM.event=="envent_WS0"))
     ### Workshops
+    event_terminate = Event(idle.to(terminated))
     event_WS0 = Event(idle.to(terminated))
     event_WS1 = Event(idle.to(ws1__select_coord)
                      | ws1__select_coord.to(std__ready)
@@ -57,7 +55,8 @@ class PopeyeFSM(StateMachine):
                      | ws2__wait_for_GPS_coord.to(std__ready)
                      | std__ready.to(std__takeoffed)
                      | std__takeoffed.to(std__repositioned)
-                     | std__repositioned.to(ws2__fire_hydrant_dropped)
+                     | std__repositioned.to(ws2__get_fire_pos)
+                     | ws2__get_fire_pos.to(ws2__fire_hydrant_dropped)
                      | ws2__fire_hydrant_dropped.to(ws2__rtl) 
                      | ws2__rtl.to(idle))
     
@@ -75,10 +74,14 @@ class PopeyeFSM(StateMachine):
             print("[FSM] 0- Terminate POPEYE")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM] -----------------------------------------------\n")
-            if choice in "0123":
+            if choice == "0":
+                PopeyeFSM.event  = "event_terminate"
+            elif choice in "123":
                 PopeyeFSM.event  = "event_WS"+choice
-                break
-            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+            else:
+                print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+                continue
+            break
     def menu_action(self):
         while True:
             print("\n[FSM] ----------------- CONTROL MENU -----------------")
@@ -136,7 +139,19 @@ class PopeyeFSM(StateMachine):
         print("[FSM] > REPOSITIONED.")
         self.send(PopeyeFSM.event)
         
-    ### Firefighter states
+    ### WS1
+    @ws1__select_coord.enter
+    def ws1_on_enter__select_coord(self):
+        self.menu_select_repo_coord()
+        self.send(PopeyeFSM.event)
+    @ws1__landed.enter
+    def ws1_on_enter__landed(self):
+        print("\n[FSM] > LANDING.")
+        self.node.call__land()
+        print("[FSM] > LANDED.")
+        self.send(PopeyeFSM.event)
+        
+    ### WS2: Firefighter states
     @ws2__wait_for_GPS_coord.enter
     def ws2_on_enter__wait_for_GPS_coor(self):
         print("[FSM] > WAIT FOR TARGET COORDONATES.")
@@ -147,6 +162,13 @@ class PopeyeFSM(StateMachine):
         self.repo_alt = 2.
         print(f"{YELLOW}[FSM] > FIRE SPOTTED > LAT:{self.repo_lat} LON:{self.repo_lon}.{RESET}")
         print("[FSM] > TARGET COORDONATES ACQUIRED.")
+        self.send(PopeyeFSM.event)
+    @ws2__get_fire_pos.enter
+    def ws2_on_enter__get_fire_pos(self):
+        print("[FSM] > SEARCHING FOR FIRE.")
+        sleep(10)
+        # Service to get fire position from camera (Felix)
+        print("[FSM] > FOUND FIRE.")
         self.send(PopeyeFSM.event)
     @ws2__fire_hydrant_dropped.enter
     def ws2_on_enter__dropped(self):
@@ -159,16 +181,4 @@ class PopeyeFSM(StateMachine):
         print("\n[FSM] > Doing RTL.")
         self.node.call__rtl()
         print("[FSM] > RTL done.")
-        self.send(PopeyeFSM.event)
-        
-    ### Workshop 1 states
-    @ws1__select_coord.enter
-    def ws1_on_enter__select_coord(self):
-        self.menu_select_repo_coord()
-        self.send(PopeyeFSM.event)
-    @ws1__landed.enter
-    def ws1_on_enter__landed(self):
-        print("\n[FSM] > LANDING.")
-        self.node.call__land()
-        print("[FSM] > LANDED.")
         self.send(PopeyeFSM.event)
