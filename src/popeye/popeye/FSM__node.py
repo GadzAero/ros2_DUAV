@@ -13,7 +13,7 @@ from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
 from interfaces.msg import Fire
 # Import FSM utils
-import popeye.FSM_utils as fsm
+import popeye.FSM__utils as fsm
 from popeye.PARAMS_utils import *
 
 import asyncio

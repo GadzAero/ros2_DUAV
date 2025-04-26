@@ -18,7 +18,7 @@ from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
 from interfaces.msg import Fire, UavAttitude, UavPosition 
 # Import MAV utils
-import popeye.MAV_utils as mav_utils
+import popeye.MAV_manager__utils as mav_utils
 
 ############################################################################################################################################################################################################################
 ##### Node MAVLink Manager ############################################################################################################################################################################################################################
