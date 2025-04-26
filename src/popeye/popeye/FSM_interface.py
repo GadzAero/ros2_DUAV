@@ -44,7 +44,7 @@ class FSMInterface(Node):
         self.sub__fire = self.create_subscription(Fire, 'fire', self.sub_cb__fire, 10, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### TIMERS 
-        self.timer__fsm = self.create_timer(0.1, self.timer_cb__fsm)
+        self.timer__fsm = self.create_timer(1, self.timer_cb__fsm, callback_group=MutuallyExclusiveCallbackGroup())
         
         self.get_logger().info(" > NODE FSM_interface STARTED.")
     
@@ -276,7 +276,6 @@ def main(args=None):
     ### Creating the mutlithread executor
     node = FSMInterface()
     executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
-    # executor = rclpy.executors.SingleThreadedExecutor()
     executor.add_node(node)
     try:
         executor.spin()

@@ -104,11 +104,6 @@ class MAVManager(Node):
         msg = self.mav_master.recv_match(type=['EXTENDED_SYS_STATE', 'STATUSTEXT', 'GLOBAL_POSITION_INT'], blocking=False)
         if msg is None:
             return
-        ## For debug
-        # try:
-        #     self.get_logger().info(f"{self.mav_master.recv_match().to_dict()}")
-        # except:
-        #     pass
         
         ### Save the data returning from the messages
         msg_type = msg.get_type()
@@ -298,7 +293,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = MAVManager()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
     executor.add_node(node)
     try:
         executor.spin()
