@@ -23,6 +23,7 @@ from PIL import Image
 import warnings
 import math
 import time
+
 #####################################################################################################################################################################
 ##### Node for camera use #####################################################################################################################################################################
 class CAMNode(Node):
@@ -86,7 +87,7 @@ class CAMNode(Node):
         warnings.filterwarnings("ignore", category=FutureWarning)
         ## Import of the predictive model trained for the specific pattern
         model = torch.hub.load("ultralytics/yolov5", "custom", 
-                                path="/home/linux/ros2_DUAV/src/popeye/popeye/best.pt", 
+                                path="/home/linux/ros2_DUAV/src/popeye/popeye/best.pt",device="cpu", 
                                 force_reload=True)
         # model = torch.hub.load("ultralytics/yolov5", "custom", 
         #                         path="/home/linux/ros2_DUAV/src/popeye/popeye/best.pt")
