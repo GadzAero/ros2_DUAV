@@ -108,7 +108,7 @@ class MAVManagerNode(Node):
     #----- Function to reiceive ALL  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def timer_cb__read_mavlink(self):
         ### Receive Mavlink messages
-        msg = self.mav_master.recv_match(type=['EXTENDED_SYS_STATE', 'STATUSTEXT', 'GLOBAL_POSITION_INT'], blocking=False)
+        msg = self.mav_master.recv_match(type=["EXTENDED_SYS_STATE", "STATUSTEXT", "GLOBAL_POSITION_INT", "ATTITUDE"], blocking=False)
         if msg is None:
             return
         
