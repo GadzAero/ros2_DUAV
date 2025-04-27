@@ -22,8 +22,9 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'MAV_manager__node = popeye.MAV_manager__node:main',
+            'MAV_manager__node   = popeye.MAV_manager__node:main',
             'FSM_interface__node = popeye.FSM__node:main',
+            'CAM__node           = popeye.CAM_node:main',
         ],
     },
 )
