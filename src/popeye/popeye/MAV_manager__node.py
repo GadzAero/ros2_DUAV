@@ -85,9 +85,9 @@ class MAVManagerNode(Node):
         self.act__reposition = ActionServer(self, Land,       'land',       self.act_cb__land,       callback_group=MutuallyExclusiveCallbackGroup())
         
         ### PUBLISHERS 
-        self.pub__fire_coor = self.create_publisher(Fire,        'fire',     10)
-        self.pub__attitude  = self.create_publisher(UavAttitude, 'attitude', 10)
-        self.pub__position  = self.create_publisher(UavPosition, 'position', 10)
+        self.pub__fire_coor = self.create_publisher(Fire,        'fire',     10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.pub__attitude  = self.create_publisher(UavAttitude, 'attitude', 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.pub__position  = self.create_publisher(UavPosition, 'position', 10, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### General Parameters
         ## Popeye state
