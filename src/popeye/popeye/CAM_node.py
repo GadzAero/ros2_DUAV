@@ -30,7 +30,8 @@ import numpy as np
 import math 
 import cv2 
 
-
+# Import CAM utils
+import popeye.CAM_utils as cam_utils
 
 #####################################################################################################################################################################
 ##### Node for camera use #####################################################################################################################################################################
@@ -47,7 +48,7 @@ class CAMNode(Node):
         
         ### TIMERS 
         #self.timer__fire_search = self.create_timer(1, self.timer_cb__fire_search, callback_group=MutuallyExclusiveCallbackGroup())
-        self.timer__white_search = self.create_timer(1, self.timer_cb__white_search, callback_group=MutuallyExclusiveCallbackGroup())
+        # self.timer__white_search = self.create_timer(1, self.timer_cb__white_search, callback_group=MutuallyExclusiveCallbackGroup())
 
         ### PUBLISHERS 
         self.pub__target_pos   = self.create_publisher(Targetpos, 'target_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
@@ -55,9 +56,15 @@ class CAMNode(Node):
 
         ## WEBCAM INIT 
         self.webcam = cv2.VideoCapture("/home/linux/ros2_DUAV/src/popeye/popeye/videos/videotest.mp4")
+        self.ret, self.image                   = self.webcam.read()
+        self.height, self.width, self.channels = self.image.shape
+        self.image_shape                       =(self.height, self.width, self.channels)
         ## Utilisation feed direct webcam
         # self.webcam = cv2.VideoCapture(0)
 
+        ## TEST FONCTIONS
+        # cam_utils.cam_take_screenshot(self,self.webcam)
+        cam_utils.cam_take_videowebcapture(self,self.webcam,self.image_shape, 3)
 
     def timer_cb__white_search(self):
         #Couleurs a detecter
@@ -68,8 +75,6 @@ class CAMNode(Node):
        
 
         #Récupération des caractéristiques de l'image
-        self.ret, self.image                   = self.webcam.read()
-        self.height, self.width, self.channels = self.image.shape
         self.centre_image                      = (self.width/2, self.height/2)
 
         ##Calculating conversion constant pixel/meters
@@ -80,8 +85,8 @@ class CAMNode(Node):
         # self.destroy_timer(self.timer__fire_search)
 
     
-    ############################################################################################################################################################################################################################
-    ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
+############################################################################################################################################################################################################################
+##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
     def sub_cb__position(self, msg):
         self.lat = msg.lat
         self.lon = msg.lon
@@ -195,7 +200,7 @@ class CAMNode(Node):
         # Calcul
         self.target_lat = math.asin(math.sin(self.drone_lat) * math.cos(self.target_dist / R) + math.cos(self.drone_lat) * math.sin(self.target_dist / R) * math.cos(self.target_heading))
 
-        self.target_lon= self.drone_long + math.atan2(math.sin(self.target_heading) * math.sin(self.target_dist / R) * math.cos(self.drone_lat), math.cos(self.target_dist / R) - math.sin(self.drone_lat) * math.sin(self.target_lat))
+        self.target_lon = self.drone_long + math.atan2(math.sin(self.target_heading) * math.sin(self.target_dist / R) * math.cos(self.drone_lat), math.cos(self.target_dist / R) - math.sin(self.drone_lat) * math.sin(self.target_lat))
 
         # Conversion en degrés pour le résultat
         self.target_lat = math.degrees(self.target_lat)
@@ -205,16 +210,16 @@ class CAMNode(Node):
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- PUBLICATION FUNCTIONS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def publication_offset(self):
-        msg_pub             = Deltatarget()
-        msg_pub.dist        = self.target_dist
-        msg_pub.heading     = self.target_heading
+        msg_pub         = Deltatarget()
+        msg_pub.dist    = self.target_dist
+        msg_pub.heading = self.target_heading
         self.pub__delta_target.publish(msg_pub)
         self.get_logger().info(f"TARGET > Target_dist: {self.target_dist} Target_heading: {self.target_heading} ")
     
     def publication_target_position(self):
-        msg_pub            = Targetpos()
-        msg_pub.lat_fire   = self.target_pos[0]
-        msg_pub.lon_fire   = self.target_pos[1]
+        msg_pub          = Targetpos()
+        msg_pub.lat_fire = self.target_pos[0]
+        msg_pub.lon_fire = self.target_pos[1]
         self.pub__target_pos.publish(msg_pub)
         self.get_logger().info(f"TGT_POS > Tgt_lat: {self.target_pos[0]} Tgt_lon: {self.target_pos[1]} ")
     

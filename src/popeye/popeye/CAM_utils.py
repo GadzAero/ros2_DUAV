@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-### To get an understanding of the FSM, please refer to the documentation:
-# DOC: https://python-statemachine.readthedocs.io/en/latest/actions.html
 
 # Import general params
 from time import sleep
@@ -14,97 +12,98 @@ import rclpy
 from statemachine import StateMachine, State, Event
 from flask import Flask, Response
 import cv2
+from datetime import datetime
+import time
 
-##################################################################################################################################################################################################################################################################################################################################################################
-##### FINITE STATE MACHINE FOR POPEYE ORDER CONTROL ##############################################################################################################################################################################################################################################################################################################
-class CAMUtils(Utils): 
-    ###### PARAMS ################################################################################################################################################################################################################################################################################################################################################
+
+###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
+### Individual tests
+
+#########################################################################################################################################################################################################
+##### Start video stream with webcam and display port as argument #####################################################################################################################################################################
+app = Flask(__name__)
+@app.route('/video_feed')
+def cam_start_stream(self,webcam,port):
+    # list_cameras()
+    
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=5001)
+    
+def cam_list_cameras(self,webcam,max_index=5,):
+    print("Recherche de caméras disponibles...")
+    for i in range(max_index):
+        if webcam is not None and webcam.isOpened():
+            print(f"Caméra trouvée à l'index {i}")
+            webcam.release()
+        else:
+            print(f" Pas de caméra à l'index {i}")
+
+def cam_generate_frames(self,webcam):
+    while True:
+        success, frame = webcam.read()
+        if not success:
+            break
+        else:
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+def cam_video_feed(self):
+    return Response(cam_generate_frames(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+def cam_stop_stream(self):
+        with self.lock:
+            self.streaming = False
+            if self.webcam:
+                self.webcam.release()
+        return "Stream stopped", 200
+
+#########################################################################################################################################################################################################
+##### ACTION TO TAKE SCREENSHOTS #####################################################################################################################################################################
+def cam_take_screenshot(self,webcam):
+    _, imageFrame = self.webcam.read() 
+    now       = datetime.now()
+    timestamp = now.strftime("%Y%m%d_%H%M%S") + f"{int(now.microsecond / 1000):03d}"
+    filename  = f"/home/linux/ros2_DUAV/log_popeye/screenshots/{timestamp}.png"
+    print(filename)
+    cv2.imwrite(filename, imageFrame)
+    return (filename)
+#########################################################################################################################################################################################################
+##### ACTION TO START A PREDEFINED TIME VIDEOCAPTURE #####################################################################################################################################################################
+def cam_take_videowebcapture(self,webcam,image_shape,record_seconds):
+    ## Paramètres de la vidéo
+    ret, image              = webcam.read()
+    height, width, channels = image_shape
+    fps                     =  30  # fallback si FPS = 0
+    ## Naming the file with YYMMDD_HHMMSSms format
+    now        = datetime.now()
+    timestamp  = now.strftime("%Y%m%d_%H%M%S") + f"{int(now.microsecond / 1000):03d}"
+    filename   = f"/home/linux/ros2_DUAV/log_popeye/videocaptures/{timestamp}.avi"
+    ## Encoder
+    fourcc     = cv2.VideoWriter_fourcc(*'MJPG')
+    out        = cv2.VideoWriter(filename, fourcc, fps, (width, height))
+    ##Timer_start and while entry
+    start_time = time.time()
+    while True:
+        ret, frame = webcam.read()
+        if not ret:
+            break
+        out.write(frame)
+        if time.time() - start_time >= record_seconds:
+            break
+    webcam.release()
+    out.release()
+    cv2.destroyAllWindows()
+    return (filename)
+
+
+
+
+
+
+
+
 
     
-    ###### STATES ################################################################################################################################################################################################################################################################################################################################################
-    ### Start and end states
-
-
-    ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
-    ### Individual tests
-    def start_stream(self,cam_number,port):
-        app = Flask(__name__)
-        app2= Flask(__name__)
-        cap = cv2.VideoCapture(0)  #Premiere camera USB detectée
-        list_cameras()
-        @app.route('/video_feed')
-        if __name__ == '__main__':
-            app.run(host='0.0.0.0', port=5001)
-
-    def list_cameras(max_index=5):
-        print("Recherche de caméras disponibles...")
-        for i in range(max_index):
-            cap = cv2.VideoCapture(i)
-            if cap is not None and cap.isOpened():
-                print(f"Caméra trouvée à l'index {i}")
-                cap.release()
-            else:
-                print(f" Pas de caméra à l'index {i}")
-
-    def generate_frames():
-        while True:
-            success, frame = cap.read()
-            if not success:
-                break
-            else:
-                ret, buffer = cv2.imencode('.jpg', frame)
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-    def video_feed():
-        return Response(generate_frames(),
-                        mimetype='multipart/x-mixed-replace; boundary=frame')
-    def stop_stream():
-            with self.lock:
-                self.streaming = False
-                if self.cap:
-                    self.cap.release()
-            return "Stream stopped", 200
-    
-
-    def do_take_screenshot(self,webcam):
-        _, self.imageFrame = self.webcam.read() 
-        now = datetime.now()
-        timestamp = now.strftime("%Y%m%d_%H%M%S") + f"{int(now.microsecond / 1000):03d}"
-        filename = f"{timestamp}.png"
-        cv2.imwrite(filename, frame)
-        return (filename)
-    
-    def do_videowebcapture(self,webcam,record_seconds):
-        # Paramètres de la vidéo
-        width      = int(webcam.get(cv2.webcam_PROP_FRAME_WIDTH))
-        height     = int(webcam.get(cv2.webcam_PROP_FRAME_HEIGHT))
-        fps        = webcam.get(cv2.webcam_PROP_FPS) or 30  # fallback si FPS = 0
-        now        = datetime.now()
-        timestamp  = now.strftime("%Y%m%d_%H%M%S") + f"{int(now.microsecond / 1000):03d}"
-        filename   = f"{timestamp}.avi"
-        fourcc     = cv2.VideoWriter_fourcc(*'MJPG')
-        out        = cv2.VideoWriter(filename, fourcc, fps, (width, height))
-        start_time = time.time()
-        while True:
-            ret, frame = webcam.read()
-            if not ret:
-                break
-            out.write(frame)
-            if time.time() - start_time >= record_seconds:
-                break
-        webcam.release()
-        out.release()
-        cv2.destroyAllWindows()
-        return (filename)
-    
-    
-    
-
-
-
-
-
-
-        
     ###### MENUS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
