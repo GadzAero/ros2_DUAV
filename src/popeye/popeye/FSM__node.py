@@ -2,7 +2,7 @@
 
 # Import standard utils
 from time import sleep
-import threading
+from popeye.PARAMS_utils import *
 # Import ROS2 utils
 import rclpy
 from rclpy.node import Node
@@ -14,7 +14,6 @@ from interfaces.action import Takeoff, Land, Reposition
 from interfaces.msg import Fire
 # Import FSM utils
 import popeye.FSM__utils as fsm
-from popeye.PARAMS_utils import *
 
 #####################################################################################################################################################################
 ##### Node MAVLink Manager #####################################################################################################################################################################

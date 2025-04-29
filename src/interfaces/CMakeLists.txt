@@ -28,8 +28,8 @@ set(msg_file
   "msg/Fire.msg"
   "msg/UavPosition.msg"
   "msg/UavAttitude.msg"
-  "msg/Deltatarget.msg"
-  "msg/Targetpos.msg"
+  "msg/DeltaTarget.msg"
+  "msg/TargetPos.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_file}
