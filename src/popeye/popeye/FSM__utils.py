@@ -25,25 +25,23 @@ class PopeyeFSM(StateMachine):
     terminated = State('Terminated', final=True)
     
     ### Standard states
-    std__ready             = State('std__Ready')
-    std__ready_force       = State('std__ReadyForce')
-    std__takeoffed         = State('std__Takeoffed')
-    std__repositioned      = State('std__Repositioned')
-    std__payload_drop      = State('std__PayloadDrop')
-    std__payload_reload    = State('std__PayloadReload')
-    std__take_photo        = State('std__TakePhoto')
-    std__take_video        = State('std__TakeVideo')
-    # std__landed       = State('std__Landed')
-    # std__rtl          = State('std__Rtl')
+    std__ready          = State('std__Ready')
+    std__ready_force    = State('std__ReadyForce')
+    std__takeoffed      = State('std__Takeoffed')
+    std__repositioned   = State('std__Repositioned')
+    std__payload_drop   = State('std__PayloadDrop')
+    std__payload_reload = State('std__PayloadReload')
+    std__take_photo     = State('std__TakePhoto')
+    std__take_video     = State('std__TakeVideo')
+    std__landed         = State('std__Landed')
+    std__rtl            = State('std__Rtl')
     
     ### Workshop 1
     ws1__select_coord = State('ws1__SelectCoords')
-    ws1__landed       = State('WS1__Landed')
     
     ### Workshop 2
     ws2__wait_for_GPS_coord = State('WS2__WaitForGPSCoord')
     ws2__get_fire_pos       = State('WS2__GetFirePos')
-    ws2__rtl                = State('WS2__Rtl')
 
     ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
     ### Workshops
@@ -52,16 +50,16 @@ class PopeyeFSM(StateMachine):
                      | ws1__select_coord.to(std__ready)
                      | std__ready.to(std__takeoffed)
                      | std__takeoffed.to(std__repositioned)
-                     | std__repositioned.to(ws1__landed)
-                     | ws1__landed.to(idle))
+                     | std__repositioned.to(std__landed)
+                     | std__landed.to(idle))
     event_WS2 = Event(idle.to(ws2__wait_for_GPS_coord)
                      | ws2__wait_for_GPS_coord.to(std__ready)
                      | std__ready.to(std__takeoffed)
                      | std__takeoffed.to(std__repositioned)
                      | std__repositioned.to(ws2__get_fire_pos)
                      | ws2__get_fire_pos.to(std__payload_drop)
-                     | std__payload_drop.to(ws2__rtl) 
-                     | ws2__rtl.to(idle))
+                     | std__payload_drop.to(std__rtl) 
+                     | std__rtl.to(idle))
     event_payload_reload = Event(idle.to(std__payload_reload)
                                 | std__payload_reload.to(idle))
     event_payload_drop = Event(idle.to(std__payload_drop)
@@ -117,7 +115,7 @@ class PopeyeFSM(StateMachine):
             choice = input("\n[FSM] Select an option: ")
             print("[FSM] -----------------------------------------------\n")
             if choice in "12":
-                return "event_test"+str(1+int)
+                return "event_test" + str(2 + int(choice))
             elif choice == "0":
                 return "event_idle"
             else:
@@ -197,7 +195,7 @@ class PopeyeFSM(StateMachine):
         
     @std__ready_force.enter
     def std_on_enter__ready_force(self):
-        print("\n[FSM] > GETTING READY {YELLOW}FORCE{RESET}.")
+        print(f"\n[FSM] > GETTING READY {YELLOW}FORCE{RESET}.")
         self.node.call__set_mode("GUIDED")
         self.node.call__arm(True)
         print("[FSM] > READY.")
@@ -240,31 +238,37 @@ class PopeyeFSM(StateMachine):
         self.send(PopeyeFSM.event)
         
     @std__take_photo.enter
-    def std_on_enter__payload_reload(self):
+    def std_on_enter__take_photo(self):
         print("\n[FSM] > TAKING PHOTO.")
         sleep(2)
         print("[FSM] > PHOTO TOOK.")
         self.send(PopeyeFSM.event)
         
     @std__take_video.enter
-    def std_on_enter__payload_reload(self):
+    def std_on_enter__take_video(self):
         print("\n[FSM] > TAKING VIDEO.")
         sleep(2)
         print("[FSM] > VIDEO TOOK.")
         self.send(PopeyeFSM.event)
         
+    @std__landed.enter
+    def std_on_enter__landed(self):
+        print("\n[FSM] > LANDING.")
+        self.node.call__land()
+        print("[FSM] > LANDED.")
+        self.send(PopeyeFSM.event)
         
+    @std__rtl.enter
+    def std_on_enter__rtl(self):
+        print("\n[FSM] > Doing RTL.")
+        self.node.call__rtl()
+        print("[FSM] > RTL done.")
+        self.send(PopeyeFSM.event)
         
     ### WS1
     @ws1__select_coord.enter
     def ws1_on_enter__select_coord(self):
         self.menu_select_repo_coord()
-        self.send(PopeyeFSM.event)
-    @ws1__landed.enter
-    def ws1_on_enter__landed(self):
-        print("\n[FSM] > LANDING.")
-        self.node.call__land()
-        print("[FSM] > LANDED.")
         self.send(PopeyeFSM.event)
         
     ### WS2: Firefighter states
@@ -285,10 +289,4 @@ class PopeyeFSM(StateMachine):
         sleep(10)
         # Service to get fire position from camera (Felix)
         print("[FSM] > FOUND FIRE.")
-        self.send(PopeyeFSM.event)
-    @ws2__rtl.enter
-    def ws2_on_enter__rtl(self):
-        print("\n[FSM] > Doing RTL.")
-        self.node.call__rtl()
-        print("[FSM] > RTL done.")
         self.send(PopeyeFSM.event)

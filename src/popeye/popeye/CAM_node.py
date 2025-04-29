@@ -53,6 +53,8 @@ class CAMNode(Node):
         ## Utilisation feed direct webcam
         # self.webcam = cv2.VideoCapture(0)
         
+        self.get_logger().info(" > NODE CAM__node STARTED.")
+        
     ############################################################################################################################################################################################################################
     ##### SERVICES CALLBACKS ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -87,11 +89,11 @@ class CAMNode(Node):
         self.filtre_inf_blanc = np.array([0, 0, 200])     # faible saturation, forte valeur
         self.filtre_sup_blanc = np.array([180, 50, 255])
 
-        self.nb_pt=0
-       
-
         #Récupération des caractéristiques de l'image
         self.ret, self.image                   = self.webcam.read()
+        if self.image is None:
+            self.get_logger().warn(f"Camera can't be readed.")
+            return
         self.height, self.width, self.channels = self.image.shape
         self.centre_image                      = (self.width/2, self.height/2)
 
@@ -99,31 +101,13 @@ class CAMNode(Node):
         FOV_rad                       = math.radians(63.7)
         resolution_horizontale        = self.width
         self.constant_pixel_to_meters = (2*math.tan(FOV_rad/2)) / resolution_horizontale  
-        self.loop()
-        # self.destroy_timer(self.timer__fire_search)
-
-   
-    ############################################################################################################################################################################################################################
-    ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
-    def sub_cb__position(self, msg):
-        self.lat = msg.lat
-        self.lon = msg.lon
-        self.alt = msg.alt
-   
-    def sub_cb__attitude(self, msg):
-        self.yaw = msg.yaw
-
-   
-
-###########################################################################################################################################################################################################################
-###### WHITE ZONES DETECTION ############################################################################################################################################################################################################################
-   
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- This function contains the main loop for the camera feed and calculations after initialisation ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def loop(self):
-        while 1:  
+        
+        while True:  
             ## Lecture image cam
             _, self.imageFrame = self.webcam.read()
+            if self.imageFrame is None:
+                self.get_logger().warn(f"Camera can't be readed.")
+                return
        
             ## Conversion RGB
             hsvFrame = cv2.cvtColor(self.imageFrame, cv2.COLOR_BGR2HSV)
@@ -149,8 +133,6 @@ class CAMNode(Node):
                 area = cv2.contourArea(contour)
                 #Critère sur l'aire minimale de detection en pixels
                 if(area > 5000):
-                   
-                    self.nb_pt+=1 #Compteur de detections
                     x, y, w, h = cv2.boundingRect(contour)  #Position en xy du bord en haut a gauche du cadre, width et height
                     cv2.rectangle(self.imageFrame, (x, y), (x + w, y + h), (0, 0, 255), 2)
                     #Calcul de la position du centre du cadre (en px)
@@ -177,6 +159,18 @@ class CAMNode(Node):
                 self.image.release()
                 cv2.destroyAllWindows()
                 break
+   
+    ############################################################################################################################################################################################################################
+    ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
+    def sub_cb__position(self, msg):
+        self.lat = msg.lat
+        self.lon = msg.lon
+        self.alt = msg.alt
+    def sub_cb__attitude(self, msg):
+        self.yaw = msg.yaw
+            
+    ###########################################################################################################################################################################################################################
+    ###### CONVERSION FUNCTIONS ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Converts an offset in pixels in offset in meters using camera specifications and drone altitude------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def conversion_pixel_metre(self,altitude,offset):
@@ -188,8 +182,6 @@ class CAMNode(Node):
         x_offset_metres               = x_offset_pixel*altitude*self.constant_pixel_to_meters  
         y_offset_metres               = y_offset_pixel*altitude*self.constant_pixel_to_meters                              
         return ((x_offset_metres,y_offset_metres))
-
-   
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Converts an offset (whatever unit is given) in distance and heading using drone and camera orientation------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def offset_xy_to_distandheading(self,offset_xy):
@@ -232,14 +224,14 @@ class CAMNode(Node):
         msg_pub.dist        = self.target_dist
         msg_pub.heading     = self.target_heading
         self.pub__delta_target.publish(msg_pub)
-        self.get_logger().info(f"TARGET > Target_dist: {self.target_dist} Target_heading: {self.target_heading} ")
+        # self.get_logger().info(f"TARGET > Target_dist: {self.target_dist} Target_heading: {self.target_heading} ")
    
     def publication_target_position(self):
         msg_pub            = Targetpos()
         msg_pub.lat_fire   = self.target_pos[0]
         msg_pub.lon_fire   = self.target_pos[1]
         self.pub__target_pos.publish(msg_pub)
-        self.get_logger().info(f"TGT_POS > Tgt_lat: {self.target_pos[0]} Tgt_lon: {self.target_pos[1]} ")
+        # self.get_logger().info(f"TGT_POS > Tgt_lat: {self.target_pos[0]} Tgt_lon: {self.target_pos[1]} ")
    
 
 #########################################################################################################################################################################################################
@@ -249,7 +241,7 @@ def main(args=None):
    
     ### Creating the mutlithread executor
     node     = CAMNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=2)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
     executor.add_node(node)
     try:
         executor.spin()

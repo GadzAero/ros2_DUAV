@@ -9,7 +9,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 # Import Intefaces
-from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
+from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop, TakePhoto, TakeVideo
 from interfaces.action import Takeoff, Land, Reposition
 from interfaces.msg import Fire
 # Import FSM utils
@@ -26,12 +26,14 @@ class FSMInterfaceNode(Node):
         self.is_fire = False
         
         ### SERVICE CLIENTS
-        self.cli_srv__set_mode       = self.create_client(SetMode, 'set_mode',       callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__arm            = self.create_client(Arm,     'arm',            callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__payload_drop   = self.create_client(Drop,    'payload_drop',   callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__payload_reload = self.create_client(Drop,    'payload_reload', callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__rtl            = self.create_client(Rtl,     'rtl',            callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__disarm         = self.create_client(Disarm,  'disarm',         callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=MutuallyExclusiveCallbackGroup())
         
         ### ACTIONS CLIENTS
         self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=MutuallyExclusiveCallbackGroup())
@@ -44,9 +46,7 @@ class FSMInterfaceNode(Node):
         ### TIMERS
         self.timer__fsm = self.create_timer(1, self.timer_cb__fsm, callback_group=MutuallyExclusiveCallbackGroup())
         
-        # self.call__payload_reload()
-        
-        self.get_logger().info(" > NODE FSM_interface STARTED.")
+        self.get_logger().info(" > NODE FSM__node STARTED.")
     
     ############################################################################################################################################################################################################################
     ##### TIMERS CALLBACKS ############################################################################################################################################################################################################################
@@ -189,7 +189,7 @@ class FSMInterfaceNode(Node):
     def call__set_mode(self, mode='RTL'):
         self.get_logger().info(f"> Calling SET_MODE (mode:{mode})")
         if not self.cli_srv__set_mode.wait_for_service(timeout_sec=3.0):
-            self.get_logger().warning('       ... Service not availabl.')
+            self.get_logger().warning('       ... Service not available')
             return False
         self.get_logger().info("       ... SET_MODE service available")
             
@@ -206,7 +206,7 @@ class FSMInterfaceNode(Node):
     def call__arm(self, force=False):
         self.get_logger().info(f"> Calling ARM (force:{force})")
         if not self.cli_srv__arm.wait_for_service(timeout_sec=3.0):
-            self.get_logger().warning('       ... Service not available.')
+            self.get_logger().warning('       ... Service not available')
             return False
         self.get_logger().info("       ... ARM service available")
         
@@ -223,7 +223,7 @@ class FSMInterfaceNode(Node):
     def call__payload_drop(self):
         self.get_logger().info(f"> Calling PAYLOAD DROP ")
         if not self.cli_srv__payload_drop.wait_for_service(timeout_sec=3.0):
-            self.get_logger().warning('       ... Service not available.')
+            self.get_logger().warning('       ... Service not available')
             return False
         self.get_logger().info("       ... PAYLOAD DROP service available")
         
@@ -239,7 +239,7 @@ class FSMInterfaceNode(Node):
     def call__payload_reload(self):
         self.get_logger().info(f"> Calling PAYLOAD RELOAD")
         if not self.cli_srv__payload_reload.wait_for_service(timeout_sec=3.0):
-            self.get_logger().warning('       ... Service not available.')
+            self.get_logger().warning('       ... Service not available')
             return False
         self.get_logger().info("       ... PAYLOAD RELOAD service available")
         
@@ -255,7 +255,7 @@ class FSMInterfaceNode(Node):
     def call__rtl(self):
         self.get_logger().info("> Calling RTL.")
         if not self.cli_srv__rtl.wait_for_service(timeout_sec=3.0):
-            self.get_logger().warning('       ... Service not available.')
+            self.get_logger().warning('       ... Service not available')
             return False
         self.get_logger().info("       ... RTL service available")
         
@@ -271,13 +271,45 @@ class FSMInterfaceNode(Node):
     def call__disarm(self, force=False):
         self.get_logger().info(f"> Calling DISARM (force:{force})")
         if not self.cli_srv__disarm.wait_for_service(timeout_sec=3.0):
-            self.get_logger().warning('       ... Service not available.')
+            self.get_logger().warning('       ... Service not available')
             return False
         self.get_logger().info("       ... DISARM service available")
         
         self.req__disarm     = Disarm.Request() 
         self.req__disarm.force = force
         future = self.cli_srv__disarm.call_async(self.req__disarm)
+        rclpy.spin_until_future_complete(self, future)
+        if future.result().success:
+            self.get_logger().info(f"     -> Successful")
+        else:
+            self.get_logger().warning(f"     -> Failed")
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Function to call the TAKE PHOTO service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__take_photo(self):
+        self.get_logger().info(f"> Calling TAKE_PHOTO")
+        if not self.cli_srv__take_photo.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not available')
+            return False
+        self.get_logger().info("       ... TAKE_PHOTO service available")
+            
+        request           = TakePhoto.Request()
+        future            = self.cli_srv__take_photo.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+        if future.result().success:
+            self.get_logger().info(f"     -> Successful")
+        else:
+            self.get_logger().warning(f"     -> Failed")
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Function to call the TAKE VIDEO service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__take_video(self):
+        self.get_logger().info(f"> Calling TAKE_VIDEO")
+        if not self.cli_srv__take_video.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not available')
+            return False
+        self.get_logger().info("       ... TAKE_VIDEO service available")
+            
+        request           = TakeVideo.Request()
+        future            = self.cli_srv__take_video.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
