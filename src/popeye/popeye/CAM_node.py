@@ -60,9 +60,9 @@ class CAMNode(Node):
         self.filtre_sup_blanc = np.array([180, 50, 255])
 
         self.nb_pt=0
-        ## Utilisation enregistrement ou
+       
+        ## Utilisation enregistrement 
         self.webcam = cv2.VideoCapture("/home/linux/ros2_DUAV/src/popeye/popeye/videos/videotest.mp4")
-
         ## Utilisation feed direct webcam
         # self.webcam = cv2.VideoCapture(0)
 
@@ -70,9 +70,15 @@ class CAMNode(Node):
         self.ret, self.image                   = self.webcam.read()
         self.height, self.width, self.channels = self.image.shape
         self.centre_image                      = (self.width/2, self.height/2)
+
+        ##Calculating conversion constant pixel/meters
+        FOV_rad                       = math.radians(63.7)
+        resolution_horizontale        = self.width
+        self.constant_pixel_to_meters = (2*math.tan(FOV_rad/2)) / resolution_horizontale  
+
+
         self.loop()
         # self.destroy_timer(self.timer__fire_search)
-
 
     
     ############################################################################################################################################################################################################################
@@ -156,11 +162,9 @@ class CAMNode(Node):
         ## Insert camera specifications for FOV 
         """OV2710 (format 1/2.7", dimensions 5856 µm × 3276 µm) avec différents objectifs possibles — par exemple un CS 5-50 mm pour le modèle ELP-USBFHD01M-SFV(5-50)."""
         ## OV2710 FOV at 5 mm focal (max unzoom)
-        FOV_rad                         = math.radians(63.7)
-        resolution_horizontale          = self.width
-        x_offset_pixel,y_offset_pixel   = map(int,offset)
-        x_offset_metres                 = x_offset_pixel*(2*altitude*math.tan(FOV_rad/2)) / resolution_horizontale  
-        y_offset_metres                 = y_offset_pixel*(2*altitude*math.tan(FOV_rad/2)) / resolution_horizontale                                  
+        x_offset_pixel,y_offset_pixel = map(int,offset)
+        x_offset_metres               = x_offset_pixel*altitude*self.constant_pixel_to_meters   
+        y_offset_metres               = y_offset_pixel*altitude*self.constant_pixel_to_meters                              
         return ((x_offset_metres,y_offset_metres))
 
     
