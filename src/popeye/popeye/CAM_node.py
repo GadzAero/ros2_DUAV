@@ -120,7 +120,7 @@ class CAMNode(Node):
             contours, hierarchy = cv2.findContours(white_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
             ## Affiche un rectangle de 10 par 10 au centre vert
             x_c,y_c         = map(int,self.centre_image)
-            self.imageFrame = cv2.rectangle(self.imageFrame, (x_c-10,y_c-10), (x_c + 10, y_c + 10), (0, 255,0), 2) 
+            cv2.rectangle(self.imageFrame, (x_c-10,y_c-10), (x_c + 10, y_c + 10), (0, 255,0), 2) 
         
             ## Pour chaque detection de chaque frame
             for pic, contour in enumerate(contours): 
@@ -130,12 +130,12 @@ class CAMNode(Node):
                     
                     self.nb_pt+=1 #Compteur de detections
                     x, y, w, h = cv2.boundingRect(contour)  #Position en xy du bord en haut a gauche du cadre, width et height
-                    self.imageFrame = cv2.rectangle(self.imageFrame, (x, y), (x + w, y + h), (0, 0, 255), 2) 
+                    cv2.rectangle(self.imageFrame, (x, y), (x + w, y + h), (0, 0, 255), 2) 
                     #Calcul de la position du centre du cadre (en px)
                     centre=(x + w/2,y+h/2)
                     #Adding legend 
                     cv2.putText(self.imageFrame, "Zone blanche", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255)) 
-                    ##Calcul offset du centre du cadre par rapport au centre de l'image
+                    ## Calcul offset du centre du cadre par rapport au centre de l'image
                     self.offset           = (centre[0]-self.centre_image[0], self.centre_image[1]-centre[1])
                     ## Adding red frame over dected target
                     self.imageFrame       = cv2.line(self.imageFrame,(int(self.centre_image[0]), int(self.centre_image[1])),(int(centre[0]), int(centre[1])), (255, 0, 255), 1)    
@@ -147,7 +147,7 @@ class CAMNode(Node):
                     ## Calculating target position
                     self.target_pos=self.offset_distheading_meters_to_GPS()
                     self.publication_target_position()
-                    time.sleep(1)
+                    #time.sleep(1)
                 #break
 
             cv2.imshow("GadzAero Thermal detection software", self.imageFrame) 
