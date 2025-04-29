@@ -148,7 +148,7 @@ class CAMNode(Node):
                     self.target_pos=self.offset_distheading_meters_to_GPS()
                     self.publication_target_position()
                     time.sleep(1)
-                break
+                #break
 
             cv2.imshow("GadzAero Thermal detection software", self.imageFrame) 
             if cv2.waitKey(1) & 0xFF == ord('q'): #Pressser q pour terminer
