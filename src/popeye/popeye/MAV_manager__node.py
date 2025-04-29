@@ -73,11 +73,12 @@ class MAVManagerNode(Node):
         self.timer__read_mavlink = self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### SERVICES (running them concurently to themselves or actions is useless)
-        self.srv__set_mode   = self.create_service(SetMode,    'set_mode',   self.srv_cb__set_mode,   callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__arm        = self.create_service(Arm,        'arm',        self.srv_cb__arm,        callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__rtl        = self.create_service(Drop,       'drop',       self.srv_cb__drop,       callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__rtl        = self.create_service(Rtl,        'rtl',        self.srv_cb__rtl,        callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__disarm     = self.create_service(Disarm,     'disarm',     self.srv_cb__disarm,     callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__set_mode       = self.create_service(SetMode, 'set_mode',       self.srv_cb__set_mode,       callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__arm            = self.create_service(Arm,     'arm',            self.srv_cb__arm,            callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__payload_drop   = self.create_service(Drop,    'payload_drop',   self.srv_cb__payload_drop,   callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__payload_reload = self.create_service(Drop,    'payload_reload', self.srv_cb__payload_reload, callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__rtl            = self.create_service(Rtl,     'rtl',            self.srv_cb__rtl,            callback_group=MutuallyExclusiveCallbackGroup())
+        self.srv__disarm         = self.create_service(Disarm,  'disarm',         self.srv_cb__disarm,         callback_group=MutuallyExclusiveCallbackGroup())
         
         ### ACTIONS (running them concurently to themselves or services is useless)
         self.act__takeoff    = ActionServer(self, Takeoff,    'takeoff',    self.act_cb__takeoff,    callback_group=MutuallyExclusiveCallbackGroup())
@@ -139,7 +140,7 @@ class MAVManagerNode(Node):
             msg_pub.lon = self.popeye_pos_lon
             msg_pub.alt = self.popeye_pos_alt
             self.pub__position.publish(msg_pub)
-            self.get_logger().info(f"RECEIVED > Lat: {self.popeye_pos_lat} Lon: {self.popeye_pos_lon} Alt: {self.popeye_pos_alt}")
+            # self.get_logger().info(f"RECEIVED > Lat: {self.popeye_pos_lat} Lon: {self.popeye_pos_lon} Alt: {self.popeye_pos_alt}")
         ## For LANDED_STATE messages
         elif msg_type == "EXTENDED_SYS_STATE":
             landed_state_id = msg.landed_state
@@ -170,7 +171,7 @@ class MAVManagerNode(Node):
             msg_pub.pitch = self.pitch
             msg_pub.roll  = self.roll
             self.pub__attitude.publish(msg_pub)
-            self.get_logger().info(f"RECEIVED > Yaw: {self.yaw} Pitch: {self.pitch} Roll: {self.roll}")
+            # self.get_logger().info(f"RECEIVED > Yaw: {self.yaw} Pitch: {self.pitch} Roll: {self.roll}")
 
     ############################################################################################################################################################################################################################
     ##### ACTIONS CALLBACK ############################################################################################################################################################################################################################
@@ -261,11 +262,23 @@ class MAVManagerNode(Node):
             self.get_logger().warning("      -> Failure")
         return response
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Service server to DROP ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def srv_cb__drop(self, request, response):
+    #----- Service server to PAYLOAD DROP ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def srv_cb__payload_drop(self, request, response):
         print()
-        self.get_logger().info(f"> Call service DROP")
-        if mav_utils.mav_drop(self.mav_master):
+        self.get_logger().info(f"> Call service PAYLOAD DROP")
+        if mav_utils.mav_payload_drop(self.mav_master):
+            response.success = True
+            self.get_logger().info("      -> Success.")
+        else:
+            response.success = False
+            self.get_logger().warning("      -> Failure")
+        return response
+    #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Service server to PAYLOAD RELOAD ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def srv_cb__payload_reload(self, request, response):
+        print()
+        self.get_logger().info(f"> Call service PAYLOAD RELOAD")
+        if mav_utils.mav_payload_reload(self.mav_master):
             response.success = True
             self.get_logger().info("      -> Success.")
         else:

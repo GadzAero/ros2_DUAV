@@ -27,22 +27,25 @@ class FSMInterfaceNode(Node):
         self.is_fire = False
         
         ### SERVICE CLIENTS
-        self.cli_srv__set_mode = self.create_client(SetMode, 'set_mode', callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__arm      = self.create_client(Arm,     'arm',      callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__drop     = self.create_client(Drop,    'drop',     callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__rtl      = self.create_client(Rtl,     'rtl',      callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__disarm   = self.create_client(Disarm,  'disarm',   callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__set_mode       = self.create_client(SetMode, 'set_mode',       callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__arm            = self.create_client(Arm,     'arm',            callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__payload_drop   = self.create_client(Drop,    'payload_drop',   callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__payload_reload = self.create_client(Drop,    'payload_reload', callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__rtl            = self.create_client(Rtl,     'rtl',            callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__disarm         = self.create_client(Disarm,  'disarm',         callback_group=MutuallyExclusiveCallbackGroup())
         
         ### ACTIONS CLIENTS
         self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
         self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
         
-        ### SUBSCRIBERS 
+        ### SUBSCRIBERS
         self.sub__fire = self.create_subscription(Fire, 'fire', self.sub_cb__fire, 10, callback_group=MutuallyExclusiveCallbackGroup())
         
-        ### TIMERS 
+        ### TIMERS
         self.timer__fsm = self.create_timer(1, self.timer_cb__fsm, callback_group=MutuallyExclusiveCallbackGroup())
+        
+        # self.call__payload_reload()
         
         self.get_logger().info(" > NODE FSM_interface STARTED.")
     
@@ -217,16 +220,32 @@ class FSMInterfaceNode(Node):
         else:
             self.get_logger().warning(f"     -> Failed")
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Function to call the DROP service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__drop(self):
-        self.get_logger().info(f"> Calling DROP ")
-        if not self.cli_srv__drop.wait_for_service(timeout_sec=3.0):
+    #----- Function to call the PAYLOAD DROP service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__payload_drop(self):
+        self.get_logger().info(f"> Calling PAYLOAD DROP ")
+        if not self.cli_srv__payload_drop.wait_for_service(timeout_sec=3.0):
             self.get_logger().warning('       ... Service not available.')
             return False
-        self.get_logger().info("       ... DROP service available")
+        self.get_logger().info("       ... PAYLOAD DROP service available")
         
         request = Drop.Request()
-        future  = self.cli_srv__drop.call_async(request)
+        future  = self.cli_srv__payload_drop.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+        if future.result().success:
+            self.get_logger().info(f"     -> Successful")
+        else:
+            self.get_logger().warning(f"     -> Failed")
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Function to call the PAYLOAD RELOAD service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def call__payload_reload(self):
+        self.get_logger().info(f"> Calling PAYLOAD RELOAD")
+        if not self.cli_srv__payload_reload.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warning('       ... Service not available.')
+            return False
+        self.get_logger().info("       ... PAYLOAD RELOAD service available")
+        
+        request = Drop.Request()
+        future  = self.cli_srv__payload_reload.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
