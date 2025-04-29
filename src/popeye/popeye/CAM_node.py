@@ -113,7 +113,7 @@ class CAMNode(Node):
             ## Création de contours
             contours, hierarchy = cv2.findContours(white_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
             ## Affiche un rectangle de 10 par 10 au centre vert
-            x_c,y_c=map(int,self.centre_image)
+            x_c,y_c         = map(int,self.centre_image)
             self.imageFrame = cv2.rectangle(self.imageFrame, (x_c-10,y_c-10), (x_c + 10, y_c + 10), (0, 255,0), 2) 
         
             ## Pour chaque detection de chaque frame
@@ -141,7 +141,8 @@ class CAMNode(Node):
                     ## Calculating target position
                     self.target_pos=self.offset_distheading_meters_to_GPS()
                     self.publication_target_position()
-                    #time.sleep(1)
+                    time.sleep(1)
+                break
 
             cv2.imshow("GadzAero Thermal detection software", self.imageFrame) 
             if cv2.waitKey(1) & 0xFF == ord('q'): #Pressser q pour terminer
@@ -155,18 +156,13 @@ class CAMNode(Node):
         ## Insert camera specifications for FOV 
         """OV2710 (format 1/2.7", dimensions 5856 µm × 3276 µm) avec différents objectifs possibles — par exemple un CS 5-50 mm pour le modèle ELP-USBFHD01M-SFV(5-50)."""
         ## OV2710 FOV at 5 mm focal (max unzoom)
-        FOV_horizontal                = math.radians(63.7)
-        FOV_vertical                  = math.radians(37.9)
-        resolution_horizontale        = self.height
-        resolution_verticale          = self.width
-        largeur_champ                 = 2*altitude*math.tan(FOV_horizontal/2)
-        hauteur_champ                 = 2*altitude*math.tan(FOV_vertical/2)
-        taille_pixel_horizontal       = largeur_champ/resolution_horizontale
-        taille_pixel_vertical         = hauteur_champ/resolution_verticale
-        x_offset_pixel,y_offset_pixel = map(int,offset)
-        x_offset_metres               = x_offset_pixel*taille_pixel_horizontal
-        y_offset_metres               = y_offset_pixel*taille_pixel_vertical
+        FOV_rad                         = math.radians(63.7)
+        resolution_horizontale          = self.width
+        x_offset_pixel,y_offset_pixel   = map(int,offset)
+        x_offset_metres                 = x_offset_pixel*(2*altitude*math.tan(FOV_rad/2)) / resolution_horizontale  
+        y_offset_metres                 = y_offset_pixel*(2*altitude*math.tan(FOV_rad/2)) / resolution_horizontale                                  
         return ((x_offset_metres,y_offset_metres))
+
     
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Converts an offset (whatever unit is given) in distance and heading using drone and camera orientation------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -188,7 +184,7 @@ class CAMNode(Node):
         self.drone_lat     = self.lat
         self.drone_long    = self.lon
         self.drone_heading = (math.degrees(self.yaw)+360) % 360
-        R = 6371000  
+        R                  = 6371000  
         # Conversion en radians
         self.drone_lat      = math.radians(self.drone_lat)
         self.drone_long     = math.radians(self.drone_long)
