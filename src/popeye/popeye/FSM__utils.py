@@ -25,12 +25,14 @@ class PopeyeFSM(StateMachine):
     terminated = State('Terminated', final=True)
     
     ### Standard states
-    std__ready          = State('std__Ready')
-    std__ready_force    = State('std__ReadyForce')
-    std__takeoffed      = State('std__Takeoffed')
-    std__repositioned   = State('std__Repositioned')
-    std__payload_drop   = State('std__PayloadDrop')
-    std__payload_reload = State('std__PayloadReload')
+    std__ready             = State('std__Ready')
+    std__ready_force       = State('std__ReadyForce')
+    std__takeoffed         = State('std__Takeoffed')
+    std__repositioned      = State('std__Repositioned')
+    std__payload_drop      = State('std__PayloadDrop')
+    std__payload_reload    = State('std__PayloadReload')
+    std__take_photo        = State('std__TakePhoto')
+    std__take_video        = State('std__TakeVideo')
     # std__landed       = State('std__Landed')
     # std__rtl          = State('std__Rtl')
     
@@ -66,6 +68,10 @@ class PopeyeFSM(StateMachine):
                               | std__payload_drop.to(idle))
     event_test2 = Event(idle.to(std__ready_force)
                        | std__ready_force.to(idle))
+    event_test3 = Event(idle.to(std__take_photo)
+                       | std__take_photo.to(idle))
+    event_test4 = Event(idle.to(std__take_video)
+                       | std__take_video.to(idle))
     
     def __init__(self, node):
         self.node = node
@@ -81,6 +87,7 @@ class PopeyeFSM(StateMachine):
             print("[FSM] 3- WS3: Precision landing")
             print("[FSM] 4- Menu: payload actions")
             print("[FSM] 5- Menu: tests")
+            print("[FSM] 6- Menu: camera")
             print("[FSM] 0- Terminate POPEYE")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM]")
@@ -91,6 +98,8 @@ class PopeyeFSM(StateMachine):
                 PopeyeFSM.event = self.menu_payload_actions()
             elif choice == "5":
                 PopeyeFSM.event = self.menu_tests()
+            elif choice == "6":
+                PopeyeFSM.event = self.menu_camera()
             elif choice in "123":
                 PopeyeFSM.event = "event_WS"+choice
             else:
@@ -99,17 +108,33 @@ class PopeyeFSM(StateMachine):
             ### Continue if choosen, else do aciton
             if PopeyeFSM.event != "event_idle":
                 break
+    def menu_camera(self):
+        while True:
+            print("\n[FSM] ----------------- POPEYE MENU -----------------")
+            print("[FSM] 1- Take photo")
+            print("[FSM] 2- Take video")
+            print("[FSM] 0- Go Back")
+            choice = input("\n[FSM] Select an option: ")
+            print("[FSM] -----------------------------------------------\n")
+            if choice in "12":
+                return "event_test"+str(1+int)
+            elif choice == "0":
+                return "event_idle"
+            else:
+                print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+                continue
     def menu_tests(self):
         while True:
             print("\n[FSM] ----------------- POPEYE MENU -----------------")
             print("[FSM] 1- TEST1: Payload drop")
             print(f"[FSM] 2- TEST2: Change Mode {YELLOW}(GUIDED){RESET} and arm {YELLOW}(FORCE){RESET}")
+            print("[FSM] 3- TEST3: Take Photo")
             print("[FSM] 0- Go Back")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM] -----------------------------------------------\n")
             if choice == "1":
                 return "event_payload_drop"
-            elif choice in "2":
+            elif choice in "2345":
                 return "event_test"+choice
             elif choice == "0":
                 return "event_idle"
@@ -169,6 +194,7 @@ class PopeyeFSM(StateMachine):
         self.node.call__arm(False)
         print("[FSM] > READY.")
         self.send(PopeyeFSM.event)
+        
     @std__ready_force.enter
     def std_on_enter__ready_force(self):
         print("\n[FSM] > GETTING READY {YELLOW}FORCE{RESET}.")
@@ -176,12 +202,14 @@ class PopeyeFSM(StateMachine):
         self.node.call__arm(True)
         print("[FSM] > READY.")
         self.send(PopeyeFSM.event)
+        
     @std__takeoffed.enter
     def std_on_enter__takeoff(self):
         print("\n[FSM] > TAKING OFF.")
         self.node.call__takeoff(6)
         print("[FSM] > TAKEOFFED.")
         self.send(PopeyeFSM.event)
+        
     @std__repositioned.enter
     def std_on_enter__repositioned(self):
         print("\n[FSM] > REPOSITIONING.")
@@ -196,18 +224,36 @@ class PopeyeFSM(StateMachine):
             sleep(0.25)
         print("[FSM] > REPOSITIONED.")
         self.send(PopeyeFSM.event)
+        
     @std__payload_drop.enter
     def std_on_enter__payload_drop(self):
         print("\n[FSM] > DROPPING.")
         self.node.call__payload_drop()
         print("[FSM] > DROPPED.")
         self.send(PopeyeFSM.event)
+        
     @std__payload_reload.enter
     def std_on_enter__payload_reload(self):
         print("\n[FSM] > PAYLOAD RELOADING (you have 5s).")
         self.node.call__payload_reload()
         print("[FSM] > PAYLOAD RELOADED.")
         self.send(PopeyeFSM.event)
+        
+    @std__take_photo.enter
+    def std_on_enter__payload_reload(self):
+        print("\n[FSM] > TAKING PHOTO.")
+        sleep(2)
+        print("[FSM] > PHOTO TOOK.")
+        self.send(PopeyeFSM.event)
+        
+    @std__take_video.enter
+    def std_on_enter__payload_reload(self):
+        print("\n[FSM] > TAKING VIDEO.")
+        sleep(2)
+        print("[FSM] > VIDEO TOOK.")
+        self.send(PopeyeFSM.event)
+        
+        
         
     ### WS1
     @ws1__select_coord.enter

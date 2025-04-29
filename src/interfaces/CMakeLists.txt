@@ -18,6 +18,8 @@ set(srv_file
   "srv/Drop.srv"
   "srv/Rtl.srv"
   "srv/Disarm.srv"
+  "srv/TakePhoto.srv"
+  "srv/TakeVideo.srv"
 )
 set(act_file
   "action/Takeoff.action"
@@ -28,8 +30,8 @@ set(msg_file
   "msg/Fire.msg"
   "msg/UavPosition.msg"
   "msg/UavAttitude.msg"
-  "msg/DeltaTarget.msg"
-  "msg/TargetPos.msg"
+  "msg/Deltatarget.msg"
+  "msg/Targetpos.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_file}
