@@ -53,18 +53,19 @@ class CAMNode(Node):
         self.pub__target_pos   = self.create_publisher(Targetpos, 'target_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
         self.pub__delta_target = self.create_publisher(Deltatarget, 'distance_heading', 10, callback_group=MutuallyExclusiveCallbackGroup())
 
+        ## WEBCAM INIT 
+        self.webcam = cv2.VideoCapture("/home/linux/ros2_DUAV/src/popeye/popeye/videos/videotest.mp4")
+        ## Utilisation feed direct webcam
+        # self.webcam = cv2.VideoCapture(0)
+
+
     def timer_cb__white_search(self):
-        ##Choix entre une vidéo préenregistrée ou une webcam en livefeed
         #Couleurs a detecter
         self.filtre_inf_blanc = np.array([0, 0, 200])     # faible saturation, forte valeur
         self.filtre_sup_blanc = np.array([180, 50, 255])
 
         self.nb_pt=0
        
-        ## Utilisation enregistrement 
-        self.webcam = cv2.VideoCapture("/home/linux/ros2_DUAV/src/popeye/popeye/videos/videotest.mp4")
-        ## Utilisation feed direct webcam
-        # self.webcam = cv2.VideoCapture(0)
 
         #Récupération des caractéristiques de l'image
         self.ret, self.image                   = self.webcam.read()
@@ -75,8 +76,6 @@ class CAMNode(Node):
         FOV_rad                       = math.radians(63.7)
         resolution_horizontale        = self.width
         self.constant_pixel_to_meters = (2*math.tan(FOV_rad/2)) / resolution_horizontale  
-
-
         self.loop()
         # self.destroy_timer(self.timer__fire_search)
 
