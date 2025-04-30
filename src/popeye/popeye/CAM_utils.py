@@ -22,23 +22,9 @@ import time
 #########################################################################################################################################################################################################
 ##### Start video stream with webcam and display port as argument #####################################################################################################################################################################
 app = Flask(__name__)
-@app.route('/video_feed')
-def cam_start_stream(self,webcam,port):
-    # list_cameras()
-    
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=5001)
-    
-def cam_list_cameras(self,webcam,max_index=5,):
-    print("Recherche de caméras disponibles...")
-    for i in range(max_index):
-        if webcam is not None and webcam.isOpened():
-            print(f"Caméra trouvée à l'index {i}")
-            webcam.release()
-        else:
-            print(f" Pas de caméra à l'index {i}")
-
-def cam_generate_frames(self,webcam):
+webcam = None
+def cam_generate_frames():
+    global webcam
     while True:
         success, frame = webcam.read()
         if not success:
@@ -48,10 +34,21 @@ def cam_generate_frames(self,webcam):
             frame = buffer.tobytes()
             yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
+            
+@app.route('/video_feed')
 def cam_video_feed(self):
     return Response(cam_generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+def cam_start_stream(index, port):
+    global webcam
+    webcam = cv2.VideoCapture(index)
+    if not webcam.isOpened():
+        print(f"Erreur : impossible d'ouvrir la caméra à l'index {index}")
+        return
+    print(f"Caméra à l'index {index} ouverte. Stream lancé sur http://localhost:{port}/video_feed")
+    app.run(host='0.0.0.0', port=port)
+
 def cam_stop_stream(self):
         with self.lock:
             self.streaming = False

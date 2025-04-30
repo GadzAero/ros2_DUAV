@@ -48,7 +48,7 @@ class CAMNode(Node):
         self.pub__delta_target = self.create_publisher(Deltatarget, 'distance_heading', 10, callback_group=MutuallyExclusiveCallbackGroup())
        
         ### TIMERS
-        self.timer__white_search = self.create_timer(1, self.timer_cb__white_search, callback_group=MutuallyExclusiveCallbackGroup())
+        # self.timer__white_search = self.create_timer(1, self.timer_cb__white_search, callback_group=MutuallyExclusiveCallbackGroup())
 
         #### WEBCAM INIT 
         ## For test
@@ -67,6 +67,7 @@ class CAMNode(Node):
         self.constant_pixel_to_meters = 2*math.tan(FOV_rad/2) / self.img_width  
         
         self.get_logger().info(" > NODE CAM__node STARTED.")
+        cam_utils.cam_start_stream(0,5001)
         
     ############################################################################################################################################################################################################################
     ##### SERVICES CALLBACKS ############################################################################################################################################################################################################################
