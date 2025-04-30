@@ -14,6 +14,7 @@ from flask import Flask, Response
 import cv2
 from datetime import datetime
 import time
+import os
 
 
 ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
@@ -65,8 +66,13 @@ def cam_take_screenshot(self,webcam):
     _, imageFrame = self.webcam.read() 
     now       = datetime.now()
     timestamp = now.strftime("%Y%m%d_%H%M%S") + f"{int(now.microsecond / 1000):03d}"
-    filename  = f"/home/linux/ros2_DUAV/log_popeye/screenshots/{timestamp}.png"
-    print(filename)
+    
+    # directory  = "/home/linux/ros2_DUAV/log_popeye/videocaptures/"
+    directory  = "/home/duav/ros2_DUAV/log_popeye/screenshots/"
+    ## Checking if directory exists
+    if not os.path.exists(directory):
+        raise FileNotFoundError(f"Le dossier de destination n'existe pas : {directory}")
+    filename   = directory+f"{timestamp}.png"
     cv2.imwrite(filename, imageFrame)
     return (filename)
 #########################################################################################################################################################################################################
@@ -79,11 +85,17 @@ def cam_take_videowebcapture(self,webcam,image_shape,record_seconds):
     ## Naming the file with YYMMDD_HHMMSSms format
     now        = datetime.now()
     timestamp  = now.strftime("%Y%m%d_%H%M%S") + f"{int(now.microsecond / 1000):03d}"
-    filename   = f"/home/linux/ros2_DUAV/log_popeye/videocaptures/{timestamp}.avi"
+    # directory  = "/home/linux/ros2_DUAV/log_popeye/videocaptures/"
+    directory  = "/home/duav/ros2_DUAV/log_popeye/videocaptures/"
+    ## Checking if directory exists
+    if not os.path.exists(directory):
+        raise FileNotFoundError(f"Le dossier de destination n'existe pas : {directory}")
+    filename   = directory+f"{timestamp}.avi"
     ## Encoder
     fourcc     = cv2.VideoWriter_fourcc(*'MJPG')
     out        = cv2.VideoWriter(filename, fourcc, fps, (width, height))
     ##Timer_start and while entry
+    print("Video recording started")
     start_time = time.time()
     while True:
         ret, frame = webcam.read()
@@ -104,6 +116,3 @@ def cam_take_videowebcapture(self,webcam,image_shape,record_seconds):
 
 
 
-
-    
-    ###### MENUS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
