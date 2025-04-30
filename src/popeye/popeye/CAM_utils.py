@@ -21,10 +21,7 @@ import time
 
 #########################################################################################################################################################################################################
 ##### Start video stream with webcam and display port as argument #####################################################################################################################################################################
-app = Flask(__name__)
-webcam = None
 def cam_generate_frames():
-    global webcam
     while True:
         success, frame = webcam.read()
         if not success:
@@ -40,8 +37,9 @@ def cam_video_feed(self):
     return Response(cam_generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-def cam_start_stream(index, port):
-    global webcam
+def cam_start_stream(webcam, index, port):
+    app = Flask(__name__)
+    webcam = None
     webcam = cv2.VideoCapture(index)
     if not webcam.isOpened():
         print(f"Erreur : impossible d'ouvrir la caméra à l'index {index}")
