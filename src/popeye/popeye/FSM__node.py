@@ -275,9 +275,9 @@ class FSMInterfaceNode(Node):
             return False
         self.get_logger().info("       ... DISARM service available")
         
-        self.req__disarm     = Disarm.Request() 
-        self.req__disarm.force = force
-        future = self.cli_srv__disarm.call_async(self.req__disarm)
+        request = Disarm.Request() 
+        request.force = force
+        future = self.cli_srv__disarm.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
@@ -292,8 +292,8 @@ class FSMInterfaceNode(Node):
             return False
         self.get_logger().info("       ... TAKE_PHOTO service available")
             
-        request           = TakePhoto.Request()
-        future            = self.cli_srv__take_photo.call_async(request)
+        request = TakePhoto.Request()
+        future  = self.cli_srv__take_photo.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")
@@ -301,15 +301,16 @@ class FSMInterfaceNode(Node):
             self.get_logger().warning(f"     -> Failed")
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to call the TAKE VIDEO service  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def call__take_video(self):
+    def call__take_video(self, seconds):
         self.get_logger().info(f"> Calling TAKE_VIDEO")
         if not self.cli_srv__take_video.wait_for_service(timeout_sec=3.0):
             self.get_logger().warning('       ... Service not available')
             return False
         self.get_logger().info("       ... TAKE_VIDEO service available")
             
-        request           = TakeVideo.Request()
-        future            = self.cli_srv__take_video.call_async(request)
+        request = TakeVideo.Request()
+        request.seconds = float(seconds)
+        future  = self.cli_srv__take_video.call_async(request)
         rclpy.spin_until_future_complete(self, future)
         if future.result().success:
             self.get_logger().info(f"     -> Successful")

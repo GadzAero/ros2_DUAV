@@ -240,15 +240,15 @@ class PopeyeFSM(StateMachine):
     @std__take_photo.enter
     def std_on_enter__take_photo(self):
         print("\n[FSM] > TAKING PHOTO.")
-        sleep(2)
-        print("[FSM] > PHOTO TOOK.")
+        self.node.call__take_photo()
+        print("[FSM] > PHOTO TAKEN.")
         self.send(PopeyeFSM.event)
         
     @std__take_video.enter
     def std_on_enter__take_video(self):
         print("\n[FSM] > TAKING VIDEO.")
-        sleep(2)
-        print("[FSM] > VIDEO TOOK.")
+        self.node.call__take_video(3)
+        print("[FSM] > VIDEO TAKEN.")
         self.send(PopeyeFSM.event)
         
     @std__landed.enter

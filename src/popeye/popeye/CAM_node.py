@@ -86,8 +86,8 @@ class CAMNode(Node):
     #----- Service server to TAKE VIDEO ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def srv_cb__take_video(self, request, response):
         print()
-        self.get_logger().info(f"> Call service TAKE_VIDEO")
-        if cam_utils.cam_take_videowebcapture(self.webcam):
+        self.get_logger().info(f"> Call service TAKE_VIDEO (seconds:{request.seconds})")
+        if cam_utils.cam_take_videowebcapture(self.webcam, self.image_shape, request.seconds):
             response.success = True
             self.get_logger().info("      -> Success.")
         else:
@@ -164,13 +164,13 @@ class CAMNode(Node):
         msg_pub.dist    = self.target_dist
         msg_pub.heading = self.target_heading
         self.pub__delta_target.publish(msg_pub)
-        self.get_logger().info(f"TARGET > Target_dist: {self.target_dist} Target_heading: {self.target_heading} ")
+        # self.get_logger().info(f"TARGET > Target_dist: {self.target_dist} Target_heading: {self.target_heading} ")
     def publication_target_position(self):
         msg_pub          = Targetpos()
         msg_pub.lat_fire = self.target_pos[0]
         msg_pub.lon_fire = self.target_pos[1]
         self.pub__target_pos.publish(msg_pub)
-        self.get_logger().info(f"TGT_POS > Tgt_lat: {self.target_pos[0]} Tgt_lon: {self.target_pos[1]} ")
+        # self.get_logger().info(f"TGT_POS > Tgt_lat: {self.target_pos[0]} Tgt_lon: {self.target_pos[1]} ")
         
     ############################################################################################################################################################################################################################
     ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
@@ -196,16 +196,16 @@ class CAMNode(Node):
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Converts an offset (whatever unit is given) in distance and heading using drone and camera orientation------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def offset_xy_to_distandheading(self,offset_xy):
-        self.drone_heading          = (math.degrees(self.uav_yaw)+360) % 360 
+        self.drone_heading = (math.degrees(self.uav_yaw)+360) % 360 
         self.offset_x,self.offset_y = offset_xy
-        self.camera_heading         = 0 #Degres
+        self.camera_heading = 0 #Degres
         ## Distance calculation
-        self.target_dist            = math.sqrt(self.offset_x**2+self.offset_y**2)
+        self.target_dist = math.sqrt(self.offset_x**2+self.offset_y**2)
         ## Target heading calculation and correction for camera and drone orientation
-        self.target_heading         = math.degrees(math.atan2(self.offset_y, self.offset_x))
+        self.target_heading = math.degrees(math.atan2(self.offset_y, self.offset_x))
         ## Adding camera offset to the heading
-        self.target_heading        += self.camera_heading+self.drone_heading
-        self.target_heading         = (self.target_heading + 360) % 360
+        self.target_heading += self.camera_heading+self.drone_heading
+        self.target_heading = (self.target_heading + 360) % 360
         return (self.target_dist, self.target_heading)
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Converts an offset in distance and heading to GPS coordinates using drone position as initial reference------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
