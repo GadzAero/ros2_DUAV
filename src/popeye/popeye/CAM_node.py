@@ -47,7 +47,7 @@ class CAMNode(Node):
         self.sub__attitude = self.create_subscription(UavAttitude, 'attitude', self.sub_cb__attitude, 10, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### TIMERS 
-        #self.timer__fire_search = self.create_timer(1, self.timer_cb__fire_search, callback_group=MutuallyExclusiveCallbackGroup())
+        # self.timer__fire_search = self.create_timer(1, self.timer_cb__fire_search, callback_group=MutuallyExclusiveCallbackGroup())
         # self.timer__white_search = self.create_timer(1, self.timer_cb__white_search, callback_group=MutuallyExclusiveCallbackGroup())
 
         ### PUBLISHERS 
@@ -55,16 +55,18 @@ class CAMNode(Node):
         self.pub__delta_target = self.create_publisher(Deltatarget, 'distance_heading', 10, callback_group=MutuallyExclusiveCallbackGroup())
 
         ## WEBCAM INIT 
-        self.webcam = cv2.VideoCapture("/home/linux/ros2_DUAV/src/popeye/popeye/videos/videotest.mp4")
+        #self.webcam = cv2.VideoCapture("/home/linux/ros2_DUAV/src/popeye/popeye/videos/videotest.mp4")
+        ## Utilisation feed direct webcam
+        self.webcam = cv2.VideoCapture(0)
+        
         self.ret, self.image                   = self.webcam.read()
         self.height, self.width, self.channels = self.image.shape
         self.image_shape                       =(self.height, self.width, self.channels)
-        ## Utilisation feed direct webcam
-        # self.webcam = cv2.VideoCapture(0)
+        
 
         ## TEST FONCTIONS
         # cam_utils.cam_take_screenshot(self,self.webcam)
-        cam_utils.cam_take_videowebcapture(self,self.webcam,self.image_shape, 3)
+        cam_utils.cam_take_videowebcapture(self,self.webcam,self.image_shape, 10)
 
     def timer_cb__white_search(self):
         #Couleurs a detecter
