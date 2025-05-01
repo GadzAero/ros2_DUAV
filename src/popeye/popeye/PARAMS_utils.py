@@ -19,3 +19,9 @@ DUAV_LON = -0.4283327
 DEFAULT_LAT = SGDB_LAT
 DEFAULT_LON = SGDB_LON
 DEFAULT_ALT = 6
+
+# Debug
+on_raspi = False
+
+# Path
+path_DUAV = "/home/step/ros2_DUAV"

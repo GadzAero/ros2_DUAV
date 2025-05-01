@@ -24,7 +24,8 @@ setup(
         'console_scripts': [
             'MAV_manager__node   = popeye.MAV_manager__node:main',
             'FSM_interface__node = popeye.FSM__node:main',
-            'CAM__node           = popeye.CAM_node:main',
+            'CAM__node           = popeye.CAM__node:main',
+            'CAM__analyser       = popeye.CAM__analyser:main',
         ],
     },
 )

@@ -17,11 +17,11 @@ import popeye.FSM__utils as fsm
 
 #####################################################################################################################################################################
 ##### Node MAVLink Manager #####################################################################################################################################################################
-class FSMInterfaceNode(Node):
+class FSMNode(Node):
     def __init__(self):
         super().__init__('FSM_interface_node', namespace='POPEYE')
         
-        ### Global prarams
+        ### GLOBAL PARAMS
         self.cancel_action = False
         self.is_fire = False
         
@@ -65,13 +65,14 @@ class FSMInterfaceNode(Node):
         ### Starting the FSM
         sm = fsm.PopeyeFSM(self)
         ### Save the FSM graph and destry the timer
-        img_path = "/home/step/ros2_DUAV/src/popeye/popeye//POPEYE_FSM.png"
-        sm._graph().write_png(img_path)
+        sm._graph().write_png(path_DUAV+"/src/popeye/popeye//POPEYE_FSM.png")
         self.get_logger().warn(" > FSM ended.")
         self.destroy_timer(self.timer__fsm)
     
     ############################################################################################################################################################################################################################
     ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for FIRE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def sub_cb__fire(self, msg):
         if msg.is_fire and not self.is_fire:
             self.is_fire  = True
@@ -323,7 +324,7 @@ def main(args=None):
     rclpy.init(args=args)
     
     ### Creating the mutlithread executor
-    node = FSMInterfaceNode()
+    node = FSMNode()
     executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
     executor.add_node(node)
     try:
