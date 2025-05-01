@@ -70,6 +70,10 @@ class PopeyeFSM(StateMachine):
                        | std__take_photo.to(idle))
     event_test4 = Event(idle.to(std__take_video)
                        | std__take_video.to(idle))
+    event_test5 = Event(idle.to(std__ready)
+                       | std__ready.to(std__takeoffed)
+                       | std__takeoffed.to(std__landed)
+                       | std__landed.to(idle))
     
     def __init__(self, node):
         self.node = node
@@ -86,6 +90,7 @@ class PopeyeFSM(StateMachine):
             print("[FSM] 4- Menu: payload actions")
             print("[FSM] 5- Menu: tests")
             print("[FSM] 6- Menu: camera")
+            print("[FSM] 7- Menu: Custom auto plan")
             print("[FSM] 0- Terminate POPEYE")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM]")
@@ -98,6 +103,8 @@ class PopeyeFSM(StateMachine):
                 PopeyeFSM.event = self.menu_tests()
             elif choice == "6":
                 PopeyeFSM.event = self.menu_camera()
+            elif choice == "7":
+                PopeyeFSM.event = self.menu_custom_auto_plan()
             elif choice in "123":
                 PopeyeFSM.event = "event_WS"+choice
             else:
@@ -125,16 +132,13 @@ class PopeyeFSM(StateMachine):
         while True:
             print("\n[FSM] ----------------- POPEYE MENU -----------------")
             print("[FSM] 1- TEST1: Payload drop")
-            print(f"[FSM] 2- TEST2: Change Mode {YELLOW}(GUIDED){RESET} and arm {YELLOW}(FORCE){RESET}")
+            print(f"[FSM] 2- TEST2: Change Mode to ready: {YELLOW}(GUIDED){RESET} and arm {YELLOW}(FORCE){RESET}")
             print("[FSM] 3- TEST3: Take Photo")
+            print("[FSM] 5- TEST5: Ready -> Takeoff (6m) -> Land")
             print("[FSM] 0- Go Back")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM] -----------------------------------------------\n")
-            if choice == "1":
-                return "event_payload_drop"
-            elif choice in "2345":
-                return "event_test"+choice
-            elif choice == "0":
+            if choice == "0":
                 return "event_idle"
             else:
                 print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
@@ -159,6 +163,28 @@ class PopeyeFSM(StateMachine):
     def menu_action(self):
         while True:
             print("\n[FSM] ----------------- CONTROL MENU -----------------")
+            print("[FSM] 0- Cancel Action")
+            choice = input("\n[FSM] Select an option: ")
+            print("[FSM] -----------------------------------------------")
+            if choice in "0":
+                break
+            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+    def menu_custom_auto_plan(self):
+        while True:
+            print("\n[FSM] ----------------- CONTROL MENU -----------------")
+            # Donc: on doit avoir la possibiliter d'ecrire un plan sur mission planner
+            # Pour ca on doit le selectionner dans un dossier préalablement créé
+            # Ca affiche alors le nom du plan en haut du menu
+            # L'option 2 permet de write + lancer ce plan précisement : il faut etre sur qu'on ne peut pas avoir le cas ou le plan afficher n'est pas celui voulu.
+            # Petit précision : on doit pouvoir choisir des donnée comme : le point d'attérissage, ... il y a 2 méthode pour ca 
+            #    - On pré défini tout nos plan et quand on land "go to", on a un if(go to) => menu_select_coor_to_go_to.
+            #    - On trouve une méthode pour déclancher ces menu automatiquement. Par example avec un FUNCTION_AUX id = 1. On lit tout le fichier du plan de mission et si on touve id=1 alors on sait qu'il faut pop un menu
+            # DANS TOUT LES CAS: la possibilité de modifier les plans dans le menu ROS2 n'est pas prioritaire dans le sens ou on pourra rapidement les refaire sur mission planner.
+            # Avoir un objet menu serait bien. J'en ferais un Node ROS2 complet a l'occas.
+            
+            print("ICI DOIT ETRE AFFICHER LE NOM DU PLAN ACTUELLEMENT EN 'SELECTION'")   
+            print("[FSM] 1- Choose a custom flight plan")
+            print("[FSM] 2- Launch it")
             print("[FSM] 0- Cancel Action")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM] -----------------------------------------------")
@@ -211,15 +237,7 @@ class PopeyeFSM(StateMachine):
     @std__repositioned.enter
     def std_on_enter__repositioned(self):
         print("\n[FSM] > REPOSITIONING.")
-        action = threading.Thread(target=self.node.call__reposition, args=[self.repo_lat, self.repo_lon, self.repo_alt])
-        menu   = threading.Thread(target=self.menu_action)
-        action.start()
-        menu.start()
-        while action.is_alive():
-            if not menu.is_alive():
-                self.node.cancel_action = True
-                break
-            sleep(0.25)
+        self.node.call__reposition(self.repo_lat, self.repo_lon, self.repo_alt)
         print("[FSM] > REPOSITIONED.")
         self.send(PopeyeFSM.event)
         
