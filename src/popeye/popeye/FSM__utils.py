@@ -42,6 +42,8 @@ class PopeyeFSM(StateMachine):
     ### Workshop 2
     ws2__wait_for_GPS_coord = State('WS2__WaitForGPSCoord')
     ws2__get_fire_pos       = State('WS2__GetFirePos')
+    ### Workshop 4
+    ws4__select_coord = State('ws4__SelectCoords')
 
     ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
     ### Workshops
@@ -74,6 +76,12 @@ class PopeyeFSM(StateMachine):
                        | std__ready.to(std__takeoffed)
                        | std__takeoffed.to(std__landed)
                        | std__landed.to(idle))
+    event_WS4 = Event(idle.to(ws4__select_coord)
+                     | ws4__select_coord.to(std__ready)
+                     | std__ready.to(std__takeoffed)
+                     | std__takeoffed.to(std__repositioned)
+                     | std__repositioned.to(std__landed)
+                     | std__landed.to(idle))
     
     def __init__(self, node):
         self.node = node
@@ -91,6 +99,7 @@ class PopeyeFSM(StateMachine):
             print("[FSM] 5- Menu: tests")
             print("[FSM] 6- Menu: camera")
             print("[FSM] 7- Menu: Custom auto plan")
+            print("[FSM] 8- WS4: Drone callback")
             print("[FSM] 0- Terminate POPEYE")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM]")
@@ -107,6 +116,8 @@ class PopeyeFSM(StateMachine):
                 PopeyeFSM.event = self.menu_custom_auto_plan()
             elif choice in "123":
                 PopeyeFSM.event = "event_WS"+choice
+            elif choice == "8":
+                PopeyeFSM.event = "event_WS4"
             else:
                 print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
                 continue
@@ -191,6 +202,7 @@ class PopeyeFSM(StateMachine):
             if choice in "0":
                 break
             print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
+
     def menu_select_repo_coord(self):
         print("[FSM] ----------------- CHOSE REPOSITION COORDONATES -----------------")
         self.repo_lat = float(input("[FSM] Lat: "))
@@ -307,4 +319,12 @@ class PopeyeFSM(StateMachine):
         sleep(10)
         # Service to get fire position from camera (Felix)
         print("[FSM] > FOUND FIRE.")
+        self.send(PopeyeFSM.event)
+    ### WS4
+    @ws4__select_coord.enter
+    def ws4_on_enter__select_coord(self):
+        callback_lat,callback_lon, callback_alt = 45.438967,-0.4283328,20
+        self.repo_lat = float(callback_lat)
+        self.repo_lon = float(callback_lon)
+        self.repo_alt = float(callback_alt)
         self.send(PopeyeFSM.event)
