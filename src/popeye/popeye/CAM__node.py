@@ -25,7 +25,7 @@ class CAMNode(Node):
     
     ### START VIDEO CAPTURE
     print(path_DUAV+"/src/popeye/popeye/videos/videotest.mp4")
-    self.vd_capture = cv2.VideoCapture("/home/step/ros2_DUAV/src/popeye/popeye/videos/videotest.mp4")
+    self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/videotest.mp4")
     self.cv_bridge = CvBridge()
    
   ############################################################################################################################################################################################################################

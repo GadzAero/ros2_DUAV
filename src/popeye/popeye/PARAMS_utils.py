@@ -24,4 +24,7 @@ DEFAULT_ALT = 6
 on_raspi = False
 
 # Path
-path_DUAV = "/home/step/ros2_DUAV"
+path_step = "/home/step/ros2_DUAV"
+path_felix = "/home/linux/ros2_DUAV"
+path_popeye = "/home/duav/ros2_DUAV"
+path_DUAV = path_step

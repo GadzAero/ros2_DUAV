@@ -163,7 +163,7 @@ class PopeyeFSM(StateMachine):
     def menu_action(self):
         while True:
             print("\n[FSM] ----------------- CONTROL MENU -----------------")
-            print("[FSM] 0- Cancel Action")
+            print("[FSM] 0- Go Back")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM] -----------------------------------------------")
             if choice in "0":
@@ -185,7 +185,7 @@ class PopeyeFSM(StateMachine):
             print("ICI DOIT ETRE AFFICHER LE NOM DU PLAN ACTUELLEMENT EN 'SELECTION'")   
             print("[FSM] 1- Choose a custom flight plan")
             print("[FSM] 2- Launch it")
-            print("[FSM] 0- Cancel Action")
+            print("[FSM] 0- Go Back")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM] -----------------------------------------------")
             if choice in "0":
