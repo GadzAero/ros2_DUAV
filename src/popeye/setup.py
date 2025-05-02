@@ -10,7 +10,9 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name, glob('launch/*.launch.py'))
+        ('share/' + package_name, glob('launch/*.launch.py')),
+        # ('lib/python3.10/site-packages/' + package_name, ['popeye/utils/FSM_utils.py']),
+        # ('lib/python3.10/site-packages/' + package_name, ['popeye/utils/MAV_utils.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,12 +22,10 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-            'MAV_manager = popeye.MAV_manager:main',
-<<<<<<< HEAD
-=======
-            'ihm = popeye.ihm:main',
-            'do_mission = popeye.do_mission:main',
->>>>>>> 4c497ca (UPDATE: Can send but not received)
+            'MAV_manager__node   = popeye.MAV_manager__node:main',
+            'FSM_interface__node = popeye.FSM__node:main',
+            'CAM__node           = popeye.CAM__node:main',
+            'ARUCO__node          = popeye.ARUCO__node:main',
         ],
     },
 )
