@@ -39,14 +39,20 @@ class ARUCONode(Node):
   ############################################################################################################################################################################################################################
   ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  #----- Subscriber for UAV_POSITIOn  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  #----- Subscriber for UAV_POSITION  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def sub_cb__uav_position(self, msg):
     self.uav_position = (msg.lat, msg.lon)
     self.uav_alt = msg.alt
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   #----- Subscriber for VIDEO FRAMES  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def sub_cb__image_raw(self, msg):
-    ## Save UAV current position and get current frame
+    ## Save UAV position at frame reveiving    
+    if (self.uav_position is None) or (self.uav_alt is None):
+      self.get_logger().warn("The position as not be published wet.")
+      sleep(0.25)
+      return
+    
+    ## Get current frame
     at_time_uav_position = self.uav_position
     at_time_uav_alt      = self.uav_alt
     frame = self.cv_bridge.imgmsg_to_cv2(msg)
@@ -67,10 +73,6 @@ class ARUCONode(Node):
         if id not in [5,222]:
           self.get_logger().warn("This ARUCO tag is not used")
           continue
-        if self.uav_position is None:
-          self.get_logger().warn("The position as not be published wet")
-          sleep(0.25)
-          continue
         
         ## Compute offset
         offset = self.offset_to_meters(at_time_uav_alt, (center-self.img_center))
@@ -90,8 +92,8 @@ class ARUCONode(Node):
           
         ## For debuging
         if debug_cams:
-          self.get_logger().info(f"Offset (m): ({offset[0]:.3f}, {offset[1]:.3f}) => dist (m): {dist_to_target:.2f}")
-          self.get_logger().info(f"GPS coords uav->target: {at_time_uav_position} -> ({target_lat}, {target_lon})")
+          self.get_logger().info(f"Offset (m): ({offset[0]:.3f}, {offset[1]:.3f}) => delta (m): {dist_to_target:.2f}")
+          self.get_logger().info(f"GPS coords uav->target: {at_time_uav_position} - ({target_lat}, {target_lon}) => delta ({target_lat-at_time_uav_position[0]}, {target_lon-at_time_uav_position[1]})")
           ## Use this site to compare results : https://www.omnicalculator.com/other/latitude-longitude-distance
           cv2.line(frame, (int(self.img_center[0]), int(self.img_center[1])), (int(center[0]), int(center[1])), (0, 255, 0), 1)
     
@@ -105,10 +107,10 @@ class ARUCONode(Node):
   #----- Converts an offset in pixels in offset in meters using camera specifications and drone altitude ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def offset_to_meters(self, altitude, offset):
     offset_m = np.array(offset)*altitude*self.constant_pixel_to_meters
-    # offset_m = (100.,0.)
+    # offset_m = (19.06,10.72)
     return offset_m
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  #----- Compute the target position from offset (for short distances) ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  #----- Compute the target position from offset in meters (for short distances) ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def offset_to_target_position(self, uav_position, offset):
     # ref: https://stackoverflow.com/questions/7477003/calculating-new-longitude-latitude-from-old-n-meters (it as errors, read the comments)
     # new_latitude  = latitude  + (dy / r_earth) * (180 / pi);
