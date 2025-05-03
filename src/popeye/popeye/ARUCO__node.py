@@ -48,6 +48,7 @@ class ARUCONode(Node):
   def sub_cb__image_raw(self, msg):
     ## Save UAV current position and get current frame
     at_time_uav_position = self.uav_position
+    at_time_uav_alt      = self.uav_alt
     frame = self.cv_bridge.imgmsg_to_cv2(msg)
     if frame is None:
       self.get_logger().warn(" > No images received from camera.")
@@ -72,7 +73,7 @@ class ARUCONode(Node):
           continue
         
         ## Compute offset
-        offset = self.offset_to_meters(2.5, (center-self.img_center))
+        offset = self.offset_to_meters(at_time_uav_alt, (center-self.img_center))
         dist_to_target = np.linalg.norm(offset)
         
         ## Compute the target GPS position
