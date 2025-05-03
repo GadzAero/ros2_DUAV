@@ -86,8 +86,8 @@ class MAVManagerNode(Node):
         
         ### PUBLISHERS 
         self.pub__fire_coor = self.create_publisher(Fire,        'fire',     10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__attitude  = self.create_publisher(Attitude, 'attitude', 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__position  = self.create_publisher(GpsPosition, 'position', 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.pub__attitude  = self.create_publisher(Attitude,    'uav_attitude', 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.pub__position  = self.create_publisher(GpsPosition, 'uav_position', 10, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### General Parameters
         ## Popeye state

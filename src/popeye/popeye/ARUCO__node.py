@@ -3,6 +3,7 @@
 # Import standard utils
 import numpy as np 
 import math 
+from time import sleep
 from popeye.PARAMS_utils import *
 # ROS2 utils
 import rclpy 
@@ -16,14 +17,15 @@ import cv2
  
 #####################################################################################################################################################################
 ##### Node MAVLink Manager #####################################################################################################################################################################
-class ARUCONode(Node):
+class ARUCONode(Node):  
   def __init__(self):
     super().__init__('ARUCO_node', namespace='POPEYE')
     
     ### SUBSCRIBERS
-    self.sub__image_raw = self.create_subscription(Image, 'image_raw', self.sub_cb__image_raw, 10, callback_group=MutuallyExclusiveCallbackGroup())
-    
-    ### PUBLISHER
+    self.sub__image_raw    = self.create_subscription(Image,       'image_raw',    self.sub_cb__image_raw,    10, callback_group=MutuallyExclusiveCallbackGroup())
+    self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=MutuallyExclusiveCallbackGroup())
+       
+    ### PUBLISHERS
     self.pub__cam_fire_pos = self.create_publisher(GpsPosition, 'CAM/fire_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
     self.pub__cam_park_pos = self.create_publisher(GpsPosition, 'CAM/park_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
     
@@ -31,19 +33,24 @@ class ARUCONode(Node):
     self.cv_bridge = CvBridge()
     fov = math.radians(100)
     self.img_center = np.array([1280/2, 720/2])
-    self.constant_pixel_to_meters = 2*math.tan(fov/2) / 1280 / 1.27
+    self.constant_pixel_to_meters = 2*math.tan(fov/2) / 1280 / 1.27 # As been corrected: do not remove the last division
+    self.uav_position = None
    
   ############################################################################################################################################################################################################################
   ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  #----- Subscriber for UAV_POSITIOn  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  def sub_cb__uav_position(self, msg):
+    self.uav_position = (msg.lat, msg.lon)
+    self.uav_alt = msg.alt
+  #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   #----- Subscriber for VIDEO FRAMES  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def sub_cb__image_raw(self, msg):
-    # self.get_logger().info('Receiving video frame')
+    ## Save UAV current position and get current frame
+    at_time_uav_position = self.uav_position
     frame = self.cv_bridge.imgmsg_to_cv2(msg)
-    # print(self.constant_pixel_to_meters)
-    
     if frame is None:
-      self.get_logger().warn(" > No images received.")
+      self.get_logger().warn(" > No images received from camera.")
       return
     
     ## Determine target centers
@@ -55,45 +62,59 @@ class ARUCONode(Node):
         id = aruco_center[0]
         center = aruco_center[1]
         
+        ## Check if id is reconized
+        if id not in [5,222]:
+          self.get_logger().warn("This ARUCO tag is not used")
+          continue
+        if self.uav_position is None:
+          self.get_logger().warn("The position as not be published wet")
+          sleep(0.25)
+          continue
+        
         ## Compute offset
         offset = self.offset_to_meters(2.5, (center-self.img_center))
         dist_to_target = np.linalg.norm(offset)
+        
+        ## Compute the target GPS position
+        target_lat, target_lon = self.offset_to_target_position(self.uav_position, offset)
+        msg_pub     = GpsPosition()
+        msg_pub.lat = float(target_lat)
+        msg_pub.lon = float(target_lon)
+        msg_pub.alt = float(0.)
+          
+        if id==5:
+          self.pub__cam_park_pos.publish(msg_pub)
+        elif id==222:
+          self.pub__cam_fire_pos.publish(msg_pub)
+          
         ## For debuging
         if debug_cams:
-          self.get_logger().info(f"Offset in px:{center-self.img_center}")
-          self.get_logger().info(f"Offset in meters:{offset} => dist:{dist_to_target}")
+          self.get_logger().info(f"Offset (m): ({offset[0]:.3f}, {offset[1]:.3f}) => dist (m): {dist_to_target:.2f}")
+          self.get_logger().info(f"GPS coords uav->target: {at_time_uav_position} -> ({target_lat}, {target_lon})")
+          ## Use this site to compare results : https://www.omnicalculator.com/other/latitude-longitude-distance
           cv2.line(frame, (int(self.img_center[0]), int(self.img_center[1])), (int(center[0]), int(center[1])), (0, 255, 0), 1)
-        
-        ## To publish target poses
-        if id == 5:
-          msg_pub     = GpsPosition()
-          msg_pub.lat = float(offset[0])
-          msg_pub.lon = float(offset[1])
-          msg_pub.alt = float(0.)
-          self.pub__cam_park_pos.publish(msg_pub)
-        elif id == 222:
-          msg_pub     = GpsPosition()
-          msg_pub.lat = float(offset[0])
-          msg_pub.lon = float(offset[1])
-          msg_pub.alt = float(0.)
-          self.pub__cam_fire_pos.publish(msg_pub)
-        else:
-          print("This ARUCO tag is not used")
     
-    if debug_cams:
-      cv2.imshow("camera", frame)
-      cv2.waitKey(1)
+    # if debug_cams:
+    #   cv2.imshow("camera", frame)
+    #   cv2.waitKey(1)
   
   ############################################################################################################################################################################################################################
   ##### TOOLS ############################################################################################################################################################################################################################
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  #----- Converts an offset in pixels in offset in meters using camera specifications and drone altitude------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  #----- Converts an offset in pixels in offset in meters using camera specifications and drone altitude ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def offset_to_meters(self, altitude, offset):
-      ## Insert camera specifications for FOV 
-      """OV2710 (format 1/2.7", dimensions 5856µm x 3276µm) avec différents objectifs possibles — par exemple un CS 5-50 mm pour le modèle ELP-USBFHD01M-SFV(5-50)."""
-      ## OV2710 FOV at 5 mm focal (max unzoom)
-      offset_m = np.array(offset)*altitude*self.constant_pixel_to_meters                       
-      return offset_m 
+    offset_m = np.array(offset)*altitude*self.constant_pixel_to_meters
+    # offset_m = (100.,0.)
+    return offset_m
+  #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  #----- Compute the target position from offset (for short distances) ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  def offset_to_target_position(self, uav_position, offset):
+    # ref: https://stackoverflow.com/questions/7477003/calculating-new-longitude-latitude-from-old-n-meters (it as errors, read the comments)
+    # new_latitude  = latitude  + (dy / r_earth) * (180 / pi);
+    # new_longitude = longitude + (dx / r_earth) * (180 / pi) / cos(NEW_latitude * pi/180);
+    target_lat = uav_position[0] + offset[0] * CONV
+    target_lon = uav_position[1] + offset[1] * CONV / np.cos(target_lat*TO_RAD)
+    return (target_lat, target_lon)
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   #----- Fonction to FIND ARUCO CENTERS ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def find_aruco_centers(self, frame):
@@ -130,7 +151,8 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = ARUCONode()
-    executor = rclpy.executors.SingleThreadedExecutor()
+    # executor = rclpy.executors.SingleThreadedExecutor()
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
     executor.add_node(node)
     try:
       executor.spin()
