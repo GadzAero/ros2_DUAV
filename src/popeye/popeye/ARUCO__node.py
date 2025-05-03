@@ -10,7 +10,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 # OpenCV utils
-from interfaces.msg import GpsPosition
+from interfaces.msg import GpsPosition, Attitude
 from sensor_msgs.msg import Image 
 from cv_bridge import CvBridge 
 import cv2
@@ -24,7 +24,8 @@ class ARUCONode(Node):
     ### SUBSCRIBERS
     self.sub__image_raw    = self.create_subscription(Image,       'image_raw',    self.sub_cb__image_raw,    10, callback_group=MutuallyExclusiveCallbackGroup())
     self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=MutuallyExclusiveCallbackGroup())
-       
+    self.sub__uav_attitude = self.create_subscription(Attitude,    'uav_attitude', self.sub_cb__uav_attitude, 10, callback_group=MutuallyExclusiveCallbackGroup())
+     
     ### PUBLISHERS
     self.pub__cam_fire_pos = self.create_publisher(GpsPosition, 'CAM/fire_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
     self.pub__cam_park_pos = self.create_publisher(GpsPosition, 'CAM/park_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
@@ -44,17 +45,29 @@ class ARUCONode(Node):
     self.uav_position = (msg.lat, msg.lon)
     self.uav_alt = msg.alt
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  #----- Subscriber for UAV_ATTITUDE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  def sub_cb__uav_attitude(self, msg):
+    self.uav_roll  = msg.roll
+    self.uav_pitch = msg.pitch
+  #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   #----- Subscriber for VIDEO FRAMES  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def sub_cb__image_raw(self, msg):
     ## Save UAV position at frame reveiving    
-    if (self.uav_position is None) or (self.uav_alt is None):
+    if (self.uav_position is None) or (self.uav_roll is None) or (self.uav_alt is None):
       self.get_logger().warn("The position as not be published wet.")
       sleep(0.25)
       return
     
+    ## Don't try to use camera if the drone is tilted
+    if uav_is_tilted(self.uav_roll, self.uav_pitch):
+      self.get_logger().warn("The UAV is tilted, not taking into account targets positions.")
+      return
+    else:
+      self.get_logger().info("Not tilted.")
+    
     ## Get current frame
     at_time_uav_position = self.uav_position
-    at_time_uav_alt      = self.uav_alt
+    at_time_uav_alt = self.uav_alt
     frame = self.cv_bridge.imgmsg_to_cv2(msg)
     if frame is None:
       self.get_logger().warn(" > No images received from camera.")

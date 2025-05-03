@@ -24,6 +24,7 @@ set(srv_file
 set(act_file
   "action/Takeoff.action"
   "action/Reposition.action"
+  "action/PrecisionLand.action"
   "action/Land.action"
 )
 set(msg_file

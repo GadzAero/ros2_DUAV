@@ -5,11 +5,6 @@
 # Import general params
 from time import sleep
 from popeye.PARAMS_utils import *
-import multiprocessing
-import threading
-# Import ROS2 utils
-from rclpy.node import Node
-import rclpy
 # Import FSM utils
 from statemachine import StateMachine, State, Event
 # Import geopy utils
