@@ -24,8 +24,8 @@ class CAMNode(Node):
     self.timer__read_frames = self.create_timer(0.05, self.timer_cb__read_frames, callback_group=MutuallyExclusiveCallbackGroup())
     
     ### START VIDEO CAPTURE
-    # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset.mp4")
-    self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset_diag.mp4")
+    self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset.mp4")
+    # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset_diag.mp4")
     self.cv_bridge = CvBridge()
    
   ############################################################################################################################################################################################################################
@@ -34,7 +34,7 @@ class CAMNode(Node):
   #----- Function to publish VIDEO FRAMES  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def timer_cb__read_frames(self):
     capture_success, frame = self.vd_capture.read()
-    if frame is not None:
+    if capture_success is not None:
       self.pub__video_frames.publish(self.cv_bridge.cv2_to_imgmsg(frame))
  
     self.get_logger().info('Publishing video frame')
@@ -49,12 +49,12 @@ def main(args=None):
     executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
     executor.add_node(node)
     try:
-        executor.spin()
+      executor.spin()
     except KeyboardInterrupt:
-        pass
+      pass
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
+      node.destroy_node()
+      rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

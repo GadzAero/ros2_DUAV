@@ -8,7 +8,7 @@ from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 ## Import Intefaces
 from interfaces.srv import TakePhoto, TakeVideo
-from interfaces.msg import Fire, UavPosition, UavAttitude, Deltatarget, Targetpos
+from interfaces.msg import Fire, GpsPosition, Attitude, Deltatarget, Targetpos
 ## Import ML utils
 import matplotlib.pyplot as plt
 import pathlib
@@ -36,8 +36,8 @@ class CAMNode(Node):
         super().__init__('CAM_node', namespace='POPEYE')
        
         ### SUBSCRIBERS
-        self.sub__position = self.create_subscription(UavPosition, 'position', self.sub_cb__position, 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.sub__attitude = self.create_subscription(UavAttitude, 'attitude', self.sub_cb__attitude, 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.sub__position = self.create_subscription(GpsPosition, 'position', self.sub_cb__position, 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.sub__attitude = self.create_subscription(Attitude, 'attitude', self.sub_cb__attitude, 10, callback_group=MutuallyExclusiveCallbackGroup())
        
         ### SERVICES
         self.srv__take_photo = self.create_service(TakePhoto, 'take_photo', self.srv_cb__take_photo, callback_group=MutuallyExclusiveCallbackGroup())

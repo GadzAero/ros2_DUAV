@@ -16,7 +16,7 @@ from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition
-from interfaces.msg import Fire, UavAttitude, UavPosition 
+from interfaces.msg import Fire, Attitude, GpsPosition 
 # Import MAV utils
 import popeye.MAV_manager__utils as mav_utils
 
@@ -86,8 +86,8 @@ class MAVManagerNode(Node):
         
         ### PUBLISHERS 
         self.pub__fire_coor = self.create_publisher(Fire,        'fire',     10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__attitude  = self.create_publisher(UavAttitude, 'attitude', 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__position  = self.create_publisher(UavPosition, 'position', 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.pub__attitude  = self.create_publisher(Attitude, 'attitude', 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.pub__position  = self.create_publisher(GpsPosition, 'position', 10, callback_group=MutuallyExclusiveCallbackGroup())
         
         ### General Parameters
         ## Popeye state
@@ -131,7 +131,7 @@ class MAVManagerNode(Node):
             self.popeye_pos_lat = msg.lat/1e7
             self.popeye_pos_lon = msg.lon/1e7
             self.popeye_pos_alt = msg.relative_alt/1e3
-            msg_pub     = UavPosition()
+            msg_pub     = GpsPosition()
             msg_pub.lat = self.popeye_pos_lat
             msg_pub.lon = self.popeye_pos_lon
             msg_pub.alt = self.popeye_pos_alt
@@ -162,7 +162,7 @@ class MAVManagerNode(Node):
             self.roll  = msg.roll
             self.pitch = msg.pitch
             self.yaw   = msg.yaw
-            msg_pub       = UavAttitude()
+            msg_pub       = Attitude()
             msg_pub.yaw   = self.yaw
             msg_pub.pitch = self.pitch
             msg_pub.roll  = self.roll

@@ -1,0 +1,9 @@
+float32 lat
+float32 lon
+float32 alt
+---
+bool success
+---
+float32 time_at_position 
+float32 dist_to_goal
+float32 delta_alt

@@ -9,6 +9,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 # OpenCV utils
+from interfaces.msg import GpsPosition
 from sensor_msgs.msg import Image 
 from cv_bridge import CvBridge 
 import cv2
@@ -20,19 +21,23 @@ class ARUCONode(Node):
     super().__init__('ARUCO_node', namespace='POPEYE')
     
     ### SUBSCRIBERS
-    self.sub__video_frames = self.create_subscription(Image, 'image_raw', self.sub_cb__video_frames, 10, callback_group=MutuallyExclusiveCallbackGroup())
+    self.sub__image_raw = self.create_subscription(Image, 'image_raw', self.sub_cb__image_raw, 10, callback_group=MutuallyExclusiveCallbackGroup())
+    
+    ### PUBLISHER
+    self.pub__cam_fire_pos = self.create_publisher(GpsPosition, 'CAM/fire_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
+    self.pub__cam_park_pos = self.create_publisher(GpsPosition, 'CAM/park_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
     
     ### GLOBAL PARAMS
     self.cv_bridge = CvBridge()
     fov = math.radians(100)
     self.img_center = np.array([1280/2, 720/2])
-    self.constant_pixel_to_meters = 2*math.tan(fov/2) / 1280 / 1.3
+    self.constant_pixel_to_meters = 2*math.tan(fov/2) / 1280 / 1.27
    
   ############################################################################################################################################################################################################################
   ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   #----- Subscriber for VIDEO FRAMES  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  def sub_cb__video_frames(self, msg):
+  def sub_cb__image_raw(self, msg):
     # self.get_logger().info('Receiving video frame')
     frame = self.cv_bridge.imgmsg_to_cv2(msg)
     # print(self.constant_pixel_to_meters)
@@ -52,17 +57,26 @@ class ARUCONode(Node):
         
         ## Compute offset
         offset = self.offset_to_meters(2.5, (center-self.img_center))
+        dist_to_target = np.linalg.norm(offset)
         ## For debuging
         if debug_cams:
-          self.get_logger().info("Offset in px: " + str(center-self.img_center))
-          self.get_logger().info("Offset in meters: " + str(offset))        
+          self.get_logger().info(f"Offset in px:{center-self.img_center}")
+          self.get_logger().info(f"Offset in meters:{offset} => dist:{dist_to_target}")
           cv2.line(frame, (int(self.img_center[0]), int(self.img_center[1])), (int(center[0]), int(center[1])), (0, 255, 0), 1)
         
         ## To publish target poses
         if id == 5:
-          print("PARK")
+          msg_pub     = GpsPosition()
+          msg_pub.lat = float(offset[0])
+          msg_pub.lon = float(offset[1])
+          msg_pub.alt = float(0.)
+          self.pub__cam_park_pos.publish(msg_pub)
         elif id == 222:
-          print("FIRE")
+          msg_pub     = GpsPosition()
+          msg_pub.lat = float(offset[0])
+          msg_pub.lon = float(offset[1])
+          msg_pub.alt = float(0.)
+          self.pub__cam_fire_pos.publish(msg_pub)
         else:
           print("This ARUCO tag is not used")
     
@@ -103,7 +117,6 @@ class ARUCONode(Node):
       aruco_centers.append([id, np.array([center_x, center_y])])
       if debug_cams:
         cv2.circle(frame, (center_x, center_y), 5, (0, 255, 0), -1)
-      print(f"Center of marker {marker_ids[i][0]}: ({center_x}, {center_y})")
     
     if debug_cams:
       cv2.aruco.drawDetectedMarkers(frame, marker_corners, marker_ids)
@@ -120,12 +133,12 @@ def main(args=None):
     executor = rclpy.executors.SingleThreadedExecutor()
     executor.add_node(node)
     try:
-        executor.spin()
+      executor.spin()
     except KeyboardInterrupt:
-        pass
+      pass
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
+      node.destroy_node()
+      rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
