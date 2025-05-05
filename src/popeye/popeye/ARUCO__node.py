@@ -21,14 +21,17 @@ class ARUCONode(Node):
   def __init__(self):
     super().__init__('ARUCO_node', namespace='POPEYE')
     
-    ### SUBSCRIBERS
-    self.sub__image_raw    = self.create_subscription(Image,       'image_raw',    self.sub_cb__image_raw,    10, callback_group=MutuallyExclusiveCallbackGroup())
-    self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=MutuallyExclusiveCallbackGroup())
-    self.sub__uav_attitude = self.create_subscription(Attitude,    'uav_attitude', self.sub_cb__uav_attitude, 10, callback_group=MutuallyExclusiveCallbackGroup())
-     
-    ### PUBLISHERS
-    self.pub__cam_fire_pos = self.create_publisher(GpsPosition, 'CAM/fire_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
-    self.pub__cam_park_pos = self.create_publisher(GpsPosition, 'CAM/park_pos', 10, callback_group=MutuallyExclusiveCallbackGroup())
+    ### ROS2 Callbacls
+    ## Callback groups
+    non_critical_group = ReentrantCallbackGroup()
+    ## Subscribers
+    self.create_subscription(Image,       'image_raw',    self.sub_cb__image_raw,    10, callback_group=non_critical_group)
+    self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=non_critical_group)
+    self.create_subscription(Attitude,    'uav_attitude', self.sub_cb__uav_attitude, 10, callback_group=non_critical_group)
+    ## Publishers
+    self.pub__cam_fire_pos = self.create_publisher(GpsPosition, 'CAM/fire_pos', 10, callback_group=non_critical_group)
+    self.pub__cam_park_pos = self.create_publisher(GpsPosition, 'CAM/park_pos', 10, callback_group=non_critical_group)
+    self.pub__img_debug    = self.create_publisher(Image,       'image_debug',  10, callback_group=non_critical_group)
     
     ### GLOBAL PARAMS
     self.cv_bridge = CvBridge()
@@ -36,6 +39,7 @@ class ARUCONode(Node):
     self.img_center = np.array([1280/2, 720/2])
     self.constant_pixel_to_meters = 2*math.tan(fov/2) / 1280 / 1.27 # As been corrected: do not remove the last division
     self.uav_position = None
+    
    
   ############################################################################################################################################################################################################################
   ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
@@ -52,8 +56,10 @@ class ARUCONode(Node):
   #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   #----- Subscriber for VIDEO FRAMES  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   def sub_cb__image_raw(self, msg):
-    ## Save UAV position at frame reveiving    
-    if (self.uav_position is None) or (self.uav_roll is None) or (self.uav_alt is None):
+    ## Verify that we received the needed variables
+    try:
+      self.uav_position, self.uav_roll, self.uav_alt
+    except:
       self.get_logger().warn("The position as not be published wet.")
       sleep(0.25)
       return
@@ -62,8 +68,6 @@ class ARUCONode(Node):
     if uav_is_tilted(self.uav_roll, self.uav_pitch):
       self.get_logger().warn("The UAV is tilted, not taking into account targets positions.")
       return
-    else:
-      self.get_logger().info("Not tilted.")
     
     ## Get current frame
     at_time_uav_position = self.uav_position
@@ -88,7 +92,7 @@ class ARUCONode(Node):
           continue
         
         ## Compute offset
-        offset = self.offset_to_meters(at_time_uav_alt, (center-self.img_center))
+        offset = self.offset_to_meters(1  , center-self.img_center)
         dist_to_target = np.linalg.norm(offset)
         
         ## Compute the target GPS position
@@ -99,20 +103,22 @@ class ARUCONode(Node):
         msg_pub.alt = float(0.)
           
         if id==5:
+          self.get_logger().info("PARK target detected.")
           self.pub__cam_park_pos.publish(msg_pub)
         elif id==222:
+          self.get_logger().info("FIRE target detected.")
           self.pub__cam_fire_pos.publish(msg_pub)
           
         ## For debuging
         if debug_cams:
           self.get_logger().info(f"Offset (m): ({offset[0]:.3f}, {offset[1]:.3f}) => delta (m): {dist_to_target:.2f}")
-          self.get_logger().info(f"GPS coords uav->target: {at_time_uav_position} - ({target_lat}, {target_lon}) => delta ({target_lat-at_time_uav_position[0]}, {target_lon-at_time_uav_position[1]})")
+          # self.get_logger().info(f"GPS coords uav->target: {at_time_uav_position}-({target_lat}, {target_lon}) => delta ({target_lat-at_time_uav_position[0]}, {target_lon-at_time_uav_position[1]})")
           ## Use this site to compare results : https://www.omnicalculator.com/other/latitude-longitude-distance
           cv2.line(frame, (int(self.img_center[0]), int(self.img_center[1])), (int(center[0]), int(center[1])), (0, 255, 0), 1)
     
-    # if debug_cams:
-    #   cv2.imshow("camera", frame)
-    #   cv2.waitKey(1)
+    ## To publish images debugs
+    if True:
+      self.pub__img_debug.publish(self.cv_bridge.cv2_to_imgmsg(frame))
   
   ############################################################################################################################################################################################################################
   ##### TOOLS ############################################################################################################################################################################################################################

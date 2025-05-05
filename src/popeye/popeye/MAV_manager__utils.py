@@ -21,7 +21,11 @@ def mav_set_mode(master, mode):
     mode_id = master.mode_mapping()[mode]
     master.set_mode(mode_id)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_SET_MODE] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_SET_MODE] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -35,7 +39,11 @@ def mav_arm(master, force=False):
         mavkit.MAV_CMD_COMPONENT_ARM_DISARM, 0, 
         1, 21196 if force else 0, 0, 0, 0, 0, 0)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_ARM] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_ARM] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -50,7 +58,11 @@ def mav_takeoff(master, alt=6):
         mavkit.MAV_CMD_NAV_TAKEOFF, 0, 
         0, 0, 0, 0, 0, 0, alt)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_TAKEOFF] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_TAKEOFF] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -64,8 +76,12 @@ def mav_reposition(master, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT):
         master.target_system, master.target_component, 
         mavkit.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavkit.MAV_CMD_DO_REPOSITION, 0, 0,
         0, 1, 0, 0, int(lat*10**7), int(lon*10**7), alt)
-    ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    ## Receive acknologment
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_REPOSITION] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_REPOSITION] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -80,7 +96,11 @@ def mav_land(master):
         mavkit.MAV_CMD_NAV_LAND, 0, 
         0, 0, 0, 0, 0, 0, 0)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_LAND] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_LAND] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -95,7 +115,11 @@ def mav_payload_drop(master):
         mavkit.MAV_CMD_DO_SET_SERVO, 0, 
         9, 1150, 0, 0, 0, 0, 0)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_DROP] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_DROP] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -110,7 +134,11 @@ def mav_payload_reload(master):
         mavkit.MAV_CMD_DO_SET_SERVO, 0, 
         9, 1950, 0, 0, 0, 0, 0)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_DROP] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_DROP] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -126,7 +154,11 @@ def mav_rtl(master):
         mavkit.MAV_CMD_NAV_RETURN_TO_LAUNCH , 0, 
         0, 0, 0, 0, 0, 0, 0)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_RTL] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_RTL] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False
@@ -141,7 +173,11 @@ def mav_disarm(master, force=False):
         mavkit.MAV_CMD_COMPONENT_ARM_DISARM, 0, 
         0, 21196 if force else 0, 0, 0, 0, 0, 0)
     ### Receive acknologment
-    ack_msg = master.recv_match(type='COMMAND_ACK', blocking=True).to_dict()
+    order = master.recv_match(type='COMMAND_ACK', blocking=True, timeout=1.5)
+    if order is None:
+        print(f"{RED}[MAV_DISARM] Ackologment was not received in time.")
+        return False
+    ack_msg = order.to_dict()
     if not ack_msg['result']==mavkit.MAV_RESULT_ACCEPTED:
         print(f"{RED}[MAV_DISARM] " + mavkit.enums['MAV_RESULT'][ack_msg['result']].description)
         return False

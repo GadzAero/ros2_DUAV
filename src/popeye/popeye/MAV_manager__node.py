@@ -4,6 +4,7 @@
 # General importation
 from time import sleep
 import time
+from popeye.PARAMS_utils import *
 # Import ROS2 utils
 import rclpy
 from rclpy.node import Node
@@ -30,12 +31,10 @@ class MAVManagerNode(Node):
 
         ### Connexion to MAVLink
         try:
-            # ADRUPILOT SITL
-            self.mav_master = mavutil.mavlink_connection('tcp:127.0.0.1:5782', baud=115200)
-            # PX4 SITL
-            # self.mav_master = mavutil.mavlink_connection('udp:127.0.0.1:14542')
-            # RADIO
-            # self.mav_master = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
+            if on_raspi:
+                self.mav_master = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
+            else:
+                self.mav_master = mavutil.mavlink_connection('tcp:127.0.0.1:5782', baud=115200)
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
             raise RuntimeError("Impossible de se connecter à MAVLink.")
@@ -70,37 +69,36 @@ class MAVManagerNode(Node):
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
             30, 1e6, 0, 0, 0, 0, 0)
         
-        ### TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
+        ### ROS2 Callbacks
+        ## Callback groups
+        non_critical_group = ReentrantCallbackGroup()
+        ## TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
         self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### SERVICES SERVERS
-        self.create_service(SetMode, 'set_mode',       self.srv_cb__set_mode,       callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_service(Arm,     'arm',            self.srv_cb__arm,            callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_service(Drop,    'payload_drop',   self.srv_cb__payload_drop,   callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_service(Drop,    'payload_reload', self.srv_cb__payload_reload, callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_service(Rtl,     'rtl',            self.srv_cb__rtl,            callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_service(Disarm,  'disarm',         self.srv_cb__disarm,         callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### ACTIONS SERVERS
-        ActionServer(self, Takeoff,       'takeoff',        self.act_cb__takeoff,        callback_group=MutuallyExclusiveCallbackGroup())
-        ActionServer(self, Reposition,    'reposition',     self.act_cb__reposition,     callback_group=MutuallyExclusiveCallbackGroup())
-        ActionServer(self, Land,          'land',           self.act_cb__land,           callback_group=MutuallyExclusiveCallbackGroup())
-        ActionServer(self, PrecisionLand, 'precision_land', self.act_cb__precision_land, callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### PUBLISHERS 
-        self.pub__fire_coor = self.create_publisher(Fire,        'fire',     10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__attitude  = self.create_publisher(Attitude,    'uav_attitude', 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__position  = self.create_publisher(GpsPosition, 'uav_position', 10, callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### SUBSCRIBER
-        self.sub__cam_fire_pos = self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.sub__cam_park_pos = self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
+        ## Publishers
+        self.pub__fire_coor = self.create_publisher(Fire,        'fire',         10, callback_group=non_critical_group)
+        self.pub__attitude  = self.create_publisher(Attitude,    'uav_attitude', 10, callback_group=non_critical_group)
+        self.pub__position  = self.create_publisher(GpsPosition, 'uav_position', 10, callback_group=non_critical_group)
+        ## Subscribers
+        self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=non_critical_group)
+        self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=non_critical_group)
+        ## Services
+        self.create_service(SetMode, 'set_mode',       self.srv_cb__set_mode,       callback_group=non_critical_group)
+        self.create_service(Arm,     'arm',            self.srv_cb__arm,            callback_group=non_critical_group)
+        self.create_service(Drop,    'payload_drop',   self.srv_cb__payload_drop,   callback_group=non_critical_group)
+        self.create_service(Drop,    'payload_reload', self.srv_cb__payload_reload, callback_group=non_critical_group)
+        self.create_service(Rtl,     'rtl',            self.srv_cb__rtl,            callback_group=non_critical_group)
+        self.create_service(Disarm,  'disarm',         self.srv_cb__disarm,         callback_group=non_critical_group)
+        ## Action servers
+        ActionServer(self, Takeoff,       'takeoff',        self.act_cb__takeoff,        callback_group=non_critical_group)
+        ActionServer(self, Reposition,    'reposition',     self.act_cb__reposition,     callback_group=non_critical_group)
+        ActionServer(self, Land,          'land',           self.act_cb__land,           callback_group=non_critical_group)
+        ActionServer(self, PrecisionLand, 'precision_land', self.act_cb__precision_land, callback_group=non_critical_group)
 
         ### General Parameters
         ## Popeye state
-        self.landed_state = ""
-        
-        ### Timers for debug 
+        self.landed_state = None
+        self.lon_cam_park = None
+        ## Timers for debug 
         self.elapsed_time = -time.time()
         self.start_time = time.time()
         
@@ -191,12 +189,11 @@ class MAVManagerNode(Node):
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for CAM PARK POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def sub_cb__cam_park_pos(self, msg):
-        print("park_pos")
         self.lat_cam_park = msg.lat
         self.lon_cam_park = msg.lon
         self.pos_cam_park = (msg.lat, msg.lon)
         self.alt_cam_park = msg.alt
-        print()
+        # print()
         # self.get_logger().info(f" >>> CAM_PARK_POS:{self.pos_cam_park} <<<")
         # print()
 
@@ -206,25 +203,23 @@ class MAVManagerNode(Node):
     #----- Action server to PRECISION LAND ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__precision_land(self, goal_handle):
         print()
-        self.get_logger().info(f"> Call action PRECISION LAND (start_alt:{goal_handle.request.start_alt})")
+        self.get_logger().info(f"> Call action PRECISION LAND")
         
         ## If no park target is found, return fail
-        if self.lon_cam_park is None:
-            self.get_logger().warning("      -> Failure: Park not found.")
-            goal_handle.abort()
-            return PrecisionLand.Result(success=False)
+        while self.lon_cam_park is None or self.landed_state is None:
+            self.get_logger().warning("      -> Failure: No park target as been published yet.")
+            sleep(1)
+            # goal_handle.abort()
+            # return PrecisionLand.Result(success=False)
         
         ### Precision landing main loop
-        alt = goal_handle.start_alt
-        is_pland_success, min_alt, tolerance, dist = (False, 6, 0.7, 0)
+        alt, is_pland_success, min_alt, tolerance, dist = (0., False, 6., 0.7, 0.)
         for i in range(100):
             ## If the uav is above park target
+            alt = self.uav_alt
             if dist < tolerance:
-                if self.uav_alt > 20:
-                    alt = self.uav_alt-0.5
-                elif self.uav_alt > 10:
-                    alt = self.uav_alt-0.1
-                elif self.uav_alt < min_alt:
+                alt = self.uav_alt-0.5
+                if self.uav_alt < min_alt:
                     is_pland_success = True
                     break
             ## Reposition the drone above park target
@@ -235,13 +230,13 @@ class MAVManagerNode(Node):
             ## Get the distance to target
             dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
             ## If uav is too low
-            if alt < min_alt:
+            if alt < min_alt-1.5:
                 is_pland_success = False
                 break
             ## Publish feedback
-            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=self.uav_alt, dist_target=dist ,land_state=self.landed_state))
-            self.get_logger().info(f"      ... Precision land (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
-            sleep(0.5)
+            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=float(self.uav_alt), dist_target=float(dist) ,land_state=str(self.landed_state)))
+            self.get_logger().info(f"      ... Precision land {i} (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
+            sleep(1)
             
         ## Land (if we are at a low alt)
         self.get_logger().info(f"> Call action LAND")
@@ -420,7 +415,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = MAVManagerNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=10)
     executor.add_node(node)
     try:
         executor.spin()

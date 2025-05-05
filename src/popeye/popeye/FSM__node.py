@@ -21,35 +21,35 @@ class FSMNode(Node):
     def __init__(self):
         super().__init__('FSM_interface_node', namespace='POPEYE')
         
+        ### ROS2 Callbacks
+        ## Callback groups
+        non_critical_group = ReentrantCallbackGroup()
+        ## Timers
+        self.create_timer(1,    self.timer_cb__fsm,  callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(0.01, self.timer_cb__test, callback_group=MutuallyExclusiveCallbackGroup())
+        ## Subscribers
+        self.sub__fire         = self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=non_critical_group)
+        self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=non_critical_group)
+        self.sub__cam_fire_pos = self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=non_critical_group)
+        self.sub__cam_park_pos = self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=non_critical_group)
+        ## Services clients
+        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=non_critical_group)
+        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=non_critical_group)
+        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=non_critical_group)
+        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=non_critical_group)
+        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=non_critical_group)
+        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=non_critical_group)
+        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=non_critical_group)
+        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=non_critical_group)
+        ## Actions clients
+        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=non_critical_group)
+        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=non_critical_group)
+        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=non_critical_group)
+
         ### GLOBAL PARAMS
         self.cancel_action = False
         self.is_fire = False
         self.cam_park_pos = None
-        
-        ### SERVICE CLIENTS
-        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### ACTIONS CLIENTS
-        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### SUBSCRIBERS
-        self.sub__fire         = self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.sub__cam_fire_pos = self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.sub__cam_park_pos = self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### TIMERS
-        self.timer__fsm  = self.create_timer(1, self.timer_cb__fsm,  callback_group=MutuallyExclusiveCallbackGroup())
-        self.timer__test = self.create_timer(0.01, self.timer_cb__test, callback_group=MutuallyExclusiveCallbackGroup())
         
         self.get_logger().info(" > NODE FSM__node STARTED.")
     
@@ -67,7 +67,6 @@ class FSMNode(Node):
         ### Save the FSM graph and destroy the timer
         sm._graph().write_png(path_DUAV+"/src/popeye/popeye//POPEYE_FSM.png")
         self.get_logger().warn(" > FSM ended.")
-        # self.destroy_timer(self.timer__fsm)
     def timer_cb__test(self):
         self.get_logger().info(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     
@@ -351,7 +350,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = FSMNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=15)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=10)
     executor.add_node(node)
     try:
         executor.spin()

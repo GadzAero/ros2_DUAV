@@ -46,6 +46,7 @@ path_DUAV = path_step
 def uav_is_tilted(attitude_roll, attitude_pitch):
     roll_angle = attitude_roll*TO_RAD
     pitch_angle = attitude_pitch*TO_RAD
-    if (roll_angle>5 or roll_angle<-5) or (pitch_angle>5 or pitch_angle<-5):
+    limit = 5
+    if (roll_angle>limit or roll_angle<-limit) or (pitch_angle>limit or pitch_angle<-limit):
         return True
     return False

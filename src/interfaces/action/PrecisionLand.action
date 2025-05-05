@@ -3,4 +3,4 @@ bool success
 ---
 float32 current_alt
 float32 dist_target
-string  state
+string  land_state
