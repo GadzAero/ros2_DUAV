@@ -16,7 +16,7 @@ from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
-from interfaces.action import Takeoff, Land, Reposition, PrecisionLand
+from interfaces.action import Takeoff, Land, Reposition, PrecisionLand, PrecisionRepo
 from interfaces.msg import Fire, Attitude, GpsPosition 
 # Import MAV utils
 import popeye.MAV_manager__utils as mav_utils
@@ -93,7 +93,7 @@ class MAVManagerNode(Node):
         ActionServer(self, Reposition,    'reposition',     self.act_cb__reposition,     callback_group=non_critical_group)
         ActionServer(self, Land,          'land',           self.act_cb__land,           callback_group=non_critical_group)
         ActionServer(self, PrecisionLand, 'precision_land', self.act_cb__precision_land, callback_group=non_critical_group)
-
+        ActionServer(self, PrecisionRepo, 'precision_repo', self.act_cb__precision_repo, callback_group=non_critical_group)
         ### General Parameters
         ## Popeye state
         self.landed_state = None
@@ -261,6 +261,71 @@ class MAVManagerNode(Node):
         goal_handle.succeed()
         return PrecisionLand.Result(success=True)
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Action server to PRECISION REPOSITION WITH ALT SELECTION ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def act_cb__precision_repo(self, goal_handle):
+        print()
+        self.get_logger().info(f"> Call action PRECISION REPO")
+        
+        ### If no park target (aruco=5) is found, return fail
+        while self.lon_cam_park is None or self.landed_state != "MAV_LANDED_STATE_IN_AIR":
+            self.get_logger().warning("      -> Failure: No park target as been published yet or the drone is not in air.")
+            sleep(1)
+            goal_handle.abort()
+            return PrecisionRepo.Result(success=False)
+        
+        ### Precision descent main loop
+        next_alt, is_prec_desc_success, goal_alt, tolerance, dist, dangerous_alt= (0., False, 6., 0.7, 0., 1.)
+        for i in range(100):
+            ## Get the current state
+            next_alt = self.uav_alt
+            dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
+            ## If uav is at dangerously low altitude 
+            if self.uav_alt < dangerous_alt:
+                is_prec_desc_success = False
+                break
+            ## If the uav is above park target
+            elif dist < tolerance:
+                print("ok")
+                next_alt -= 0.5
+                if self.uav_alt < goal_alt:
+                    is_prec_desc_success = True
+                    break
+            ## Reposition the drone above park target
+            elif not mav_utils.mav_reposition(self.mav_master, self.lat_cam_park, self.lon_cam_park, next_alt):
+                self.get_logger().warn("      -> Failure: MAV_REPOSITION command not valid")
+                goal_handle.abort()
+                return PrecisionRepo.Result(success=False)
+            ## Publish feedback
+            goal_handle.publish_feedback(PrecisionRepo.Feedback(current_alt=float(self.uav_alt), dist_target=float(dist), land_state=str(self.landed_state)))
+            self.get_logger().info(f"      ... Precision repo {i} (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
+            sleep(1)
+            
+        print("aaaaaa")
+        ## Land (if we are at a dangerously low alt)
+        if self.uav_alt <= dangerous_alt:
+            self.get_logger().info(f"> Call action LAND")
+            if not mav_utils.mav_land(self.mav_master):
+                self.get_logger().warn("      -> Failure: LAND command not valid")
+                goal_handle.abort()
+                return PrecisionRepo.Result(success=False)
+            while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
+                dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
+                goal_handle.publish_feedback(PrecisionRepo.Feedback(current_alt=self.uav_alt, dist_target=dist ,land_state=self.landed_state))
+                self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
+                sleep(1)
+        
+        ## If precision descent has failed
+        if not is_prec_desc_success:
+            self.get_logger().warn("      -> Failure: Precision land failed but drone as landed")
+            goal_handle.abort()
+            return PrecisionRepo.Result(success=False)
+        
+        ## Else return success
+        self.get_logger().info("      -> Success")
+        goal_handle.succeed()
+        return PrecisionRepo.Result(success=True)
+
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to TAKEOFF ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__takeoff(self, goal_handle):
         print()
@@ -301,7 +366,7 @@ class MAVManagerNode(Node):
             sleep(sleep_time)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
-        return Reposition.Result(success=True)
+        return Reposition.Result(success=True) # goal_hadndle.results.sucess
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to LAND ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__land(self, goal_handle):

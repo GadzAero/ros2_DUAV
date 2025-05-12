@@ -105,6 +105,7 @@ class PopeyeFSM(StateMachine):
             print("[FSM] 5- Menu: tests")
             print("[FSM] 6- Menu: camera")
             print("[FSM] 7- Menu: Custom auto plan")
+            print("[FSM] 8- Menu: Custom altitude precision reposition")
             print("[FSM] 0- Terminate POPEYE")
             choice = input("\n[FSM] Select an option: ")
             print("[FSM]")
@@ -121,6 +122,8 @@ class PopeyeFSM(StateMachine):
                 PopeyeFSM.event = self.menu_custom_auto_plan()
             elif choice in "123":
                 PopeyeFSM.event = "event_WS"+choice
+            elif choice == "8":
+                PopeyeFSM.event = self.menu_precision_repo()
             else:
                 print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
                 continue
@@ -198,7 +201,7 @@ class PopeyeFSM(StateMachine):
             # DANS TOUT LES CAS: la possibilité de modifier les plans dans le menu ROS2 n'est pas prioritaire dans le sens ou on pourra rapidement les refaire sur mission planner.
             # Avoir un objet menu serait bien. J'en ferais un Node ROS2 complet a l'occas.
             
-            print("ICI DOIT ETRE AFFICHER LE NOM DU PLAN ACTUELLEMENT EN 'SELECTION'")   
+            print("ICI DOIT ETRE AFFICHE LE NOM DU PLAN ACTUELLEMENT EN 'SELECTION'")   
             print("[FSM] 1- Choose a custom flight plan")
             print("[FSM] 2- Launch it")
             print("[FSM] 0- Go Back")
@@ -213,7 +216,10 @@ class PopeyeFSM(StateMachine):
         self.repo_lon = float(input("[FSM] Lon: "))
         self.repo_alt = float(input("[FSM] Alt: "))
         print("[FSM] ----------------------------------------------------------------\n")
-            
+    def menu_precision_repo(self):
+        print("[FSM] ----------------- CHOSE REPOSITION ALTITUDE -----------------")
+        self.repo_alt=float(input("[FSM] Altitude de largage: "))
+
         
     ###### STATE AND TRANSITION ACTIONS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
     ### Start and end states

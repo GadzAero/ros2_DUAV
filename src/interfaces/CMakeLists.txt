@@ -26,6 +26,7 @@ set(act_file
   "action/Reposition.action"
   "action/PrecisionLand.action"
   "action/Land.action"
+  "action/PrecisionRepo.action"
 )
 set(msg_file
   "msg/Fire.msg"
