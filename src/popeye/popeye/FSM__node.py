@@ -11,7 +11,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop, TakePhoto, TakeVideo
 from interfaces.action import Takeoff, Land, Reposition
-from interfaces.msg import Fire, GpsPosition
+from interfaces.msg import Fire, GpsPosition, Task
 # Import FSM utils
 import popeye.FSM__utils as fsm
 
@@ -25,13 +25,15 @@ class FSMNode(Node):
         ## Callback groups
         cb_1 = ReentrantCallbackGroup()
         ## Timers
-        self.create_timer(1,    self.timer_cb__fsm,  callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_timer(0.01, self.timer_cb__test, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(0.1, self.timer_cb__test, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(0.5, self.init_fsm, callback_group=MutuallyExclusiveCallbackGroup())
+        # self.create_timer(0.5, self.timer_cb__launch_task, callback_group=MutuallyExclusiveCallbackGroup())
         ## Subscribers
-        self.sub__fire         = self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=cb_1)
-        self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=cb_1)
-        self.sub__cam_fire_pos = self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=cb_1)
-        self.sub__cam_park_pos = self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=cb_1)
+        self.create_subscription(Task,        'task',         self.sub_cb__task,         10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
         ## Services clients
         self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=cb_1)
         self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=cb_1)
@@ -50,12 +52,17 @@ class FSMNode(Node):
         self.cancel_action = False
         self.is_fire = False
         self.cam_park_pos = None
+        self.task_name = None
+        self.task_arguments = None
+        self.sm = None
         
         self.get_logger().info(" > NODE FSM__node STARTED.")
     
     ############################################################################################################################################################################################################################
     ##### TIMERS CALLBACKS ############################################################################################################################################################################################################################
-    def timer_cb__fsm(self):
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Timer for FSM  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def init_fsm(self):
         self.get_logger().info(" > FSM started.")
         if not on_raspi:
             self.call__disarm(force=True)
@@ -63,47 +70,71 @@ class FSMNode(Node):
             self.get_logger().warn("BE CAREFUL : YOU HAVE TO PASS IN 'on_raspi' mode (PARAMS_utils.py)")
             self.get_logger().warn("!!!!!!!!! IT WILL CRASH !!!!!!!!!")
         ### Starting the FSM
-        sm = fsm.PopeyeFSM(self)
+        self.sm = fsm.PopeyeFSM(self)
         ### Save the FSM graph and destroy the timer
-        sm._graph().write_png(path_DUAV+"/src/popeye/popeye//POPEYE_FSM.png")
+        self.sm._graph().write_png(path_DUAV+"/src/popeye/popeye//POPEYE_FSM.png")
         self.get_logger().warn(" > FSM ended.")
     def timer_cb__test(self):
-        self.get_logger().info(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    
+        # self.get_logger().error(" OKKKK")
+        pass
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Timer for LAUNCH TASk  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # def timer_cb__launch_task(self):
+    #     if self.task_name is None:
+    #         self.get_logger().warn(f" >>> Task name is not published yet")
+    #         return
+    #     if self.sm is None:
+    #         self.get_logger().warn(f" >>> FSM not started yet")
+    #         return
+    #     prev_task_name = self.task_name
+    #     while True:
+    #         if self.task_name != prev_task_name:
+    #             self.get_logger().info(f" >>> Task received : {self.task_name}")
+    #             prev_task_name = self.task_name
+
+    #         if self.task_name == "reposition":
+    #             sm.send("event_terminate")
+    #         sleep(1)
+
     ############################################################################################################################################################################################################################
     ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for TASK  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__task(self, msg):
+        self.task_name      = msg.task_name
+        self.task_arguments = msg.arguments
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for FIRE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def sub_cb__fire(self, msg_sub):
-        if msg_sub.is_fire and not self.is_fire:
+    def sub_cb__fire(self, msg):
+        if msg.is_fire and not self.is_fire:
             self.is_fire  = True
-            self.lat_fire = msg_sub.lat_fire
-            self.lon_fire = msg_sub.lon_fire
+            self.lat_fire = msg.lat_fire
+            self.lon_fire = msg.lon_fire
             print()
             self.get_logger().warn(" >>> FIRE HAS BEEN SPOTTED <<<")
             self.get_logger().warn(f" >>> FIRE_LAT:{self.lat_fire} FIRE_LON:{self.lon_fire}<<<")
             print()
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for UAV_POSITION  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def sub_cb__uav_position(self, msg_sub):
+    def sub_cb__uav_position(self, msg):
         print("uav_pos")
-        self.uav_pos = (msg_sub.lat, msg_sub.lon)
-        self.uav_alt = msg_sub.alt
+        self.uav_pos = (msg.lat, msg.lon)
+        self.uav_alt = msg.alt
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for CAM FIRE POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def sub_cb__cam_fire_pos(self, msg_sub):
+    def sub_cb__cam_fire_pos(self, msg):
         print("cam_pos")
-        self.pos_cam_fire = (msg_sub.lat, msg_sub.lon)
-        self.alt_cam_fire = msg_sub.alt
+        self.pos_cam_fire = (msg.lat, msg.lon)
+        self.alt_cam_fire = msg.alt
         print()
         # self.get_logger().info(f" >>> CAM_FIRE_POS:{self.pos_cam_fire} <<<")
         # print()
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for CAM PARK POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def sub_cb__cam_park_pos(self, msg_sub):
+    def sub_cb__cam_park_pos(self, msg):
         print("park_pos")
-        self.pos_cam_park = (msg_sub.lat, msg_sub.lon)
-        self.alt_cam_park = msg_sub.alt
+        self.pos_cam_park = (msg.lat, msg.lon)
+        self.alt_cam_park = msg.alt
         print()
         # self.get_logger().info(f" >>> CAM_PARK_POS:{self.pos_cam_park} <<<")
         # print()

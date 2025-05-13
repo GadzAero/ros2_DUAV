@@ -14,7 +14,7 @@ import geopy.distance as geodst
 ##### FINITE STATE MACHINE FOR POPEYE ORDER CONTROL ##############################################################################################################################################################################################################################################################################################################
 class PopeyeFSM(StateMachine): 
     ###### PARAMS ################################################################################################################################################################################################################################################################################################################################################
-    event  = "idle"
+    event = "event_idle"
     
     ###### STATES ################################################################################################################################################################################################################################################################################################################################################
     ### Start and end states
@@ -35,9 +35,6 @@ class PopeyeFSM(StateMachine):
     std__landed          = State('std__Landed')
     std__rtl             = State('std__Rtl')
     
-    ### Workshop 1
-    ws1__select_coord = State('ws1__SelectCoords')
-    
     ### Workshop 2
     ws2__wait_for_fire_coords = State('WS2__WaitForFireCoords')
     ws2__get_cam_fire_pos     = State('WS2__GetCamFirePos')
@@ -45,12 +42,14 @@ class PopeyeFSM(StateMachine):
     ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
     ### Workshops events
     event_terminate = Event(idle.to(terminated))
-    event_WS1 = Event(idle.to(ws1__select_coord)
-                     | ws1__select_coord.to(std__ready)
+    event_idle = Event(idle.to(idle))
+    # Reposition
+    event_WS1 = Event(idle.to(std__ready)
                      | std__ready.to(std__takeoffed)
                      | std__takeoffed.to(std__repositioned)
                      | std__repositioned.to(std__landed)
                      | std__landed.to(idle))
+    # Firefight
     event_WS2 = Event(idle.to(ws2__wait_for_fire_coords)
                      | ws2__wait_for_fire_coords.to(std__ready)
                      | std__ready.to(std__takeoffed)
@@ -60,6 +59,7 @@ class PopeyeFSM(StateMachine):
                      | std__square_search.to(std__payload_drop)
                      | std__payload_drop.to(std__rtl) 
                      | std__rtl.to(idle))
+    # Skills
     event_payload_reload = Event(idle.to(std__payload_reload)
                                 | std__payload_reload.to(idle))
     event_payload_drop = Event(idle.to(std__payload_drop)
@@ -75,152 +75,37 @@ class PopeyeFSM(StateMachine):
                        | std__ready.to(std__takeoffed)
                        | std__takeoffed.to(std__landed)
                        | std__landed.to(idle))
-    event_test6 = Event(idle.to(ws1__select_coord)
-                       | ws1__select_coord.to(std__ready)
+    event_test6 = Event(idle.to(std__ready)
                        | std__ready.to(std__takeoffed)
                        | std__takeoffed.to(std__square_search)
                        | std__square_search.to(std__rtl)
                        | std__rtl.to(idle))
-    event_test7 = Event(idle.to(std__asserv_cam_park)
-                       | ws1__select_coord.to(std__ready)
+    event_test7 = Event(idle.to(std__ready)
                        | std__ready.to(std__takeoffed)
                        | std__takeoffed.to(std__asserv_cam_park)
-                       | std__asserv_cam_park.to(std__asserv_cam_park))
-                    #    | std__rtl.to(idle))
+                       | std__asserv_cam_park.to(std__rtl)
+                       | std__rtl.to(idle))
     
     def __init__(self, node):
         self.node = node
         super(PopeyeFSM, self).__init__()
-        
-    ############################################################################################################################################################################################################################
-    ###### MENUS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
-    def menu_idle(self):
-        while True:
-            print("\n[FSM] ----------------- POPEYE MENU -----------------")
-            print("[FSM]")
-            print("[FSM] 1- WS1: Go to and Land")
-            print("[FSM] 2- WS2: Workshop FireFighter")
-            print("[FSM] 3- WS3: Precision landing")
-            print("[FSM] 4- Menu: payload actions")
-            print("[FSM] 5- Menu: tests")
-            print("[FSM] 6- Menu: camera")
-            print("[FSM] 7- Menu: Custom auto plan")
-            print("[FSM] 0- Terminate POPEYE")
-            choice = input("\n[FSM] Select an option: ")
-            print("[FSM]")
-            print("[FSM] -----------------------------------------------\n")
-            if choice == "0":
-                PopeyeFSM.event = "event_terminate"
-            elif choice == "4":
-                PopeyeFSM.event = self.menu_payload_actions()
-            elif choice == "5":
-                PopeyeFSM.event = self.menu_tests()
-            elif choice == "6":
-                PopeyeFSM.event = self.menu_camera()
-            elif choice == "7":
-                PopeyeFSM.event = self.menu_custom_auto_plan()
-            elif choice in "123":
-                PopeyeFSM.event = "event_WS"+choice
-            else:
-                print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
-                continue
-            ### Continue if choosen, else do aciton
-            if PopeyeFSM.event != "event_idle":
-                break
-    def menu_camera(self):
-        while True:
-            print("\n[FSM] ----------------- POPEYE MENU -----------------")
-            print("[FSM] 1- Take photo")
-            print("[FSM] 2- Take video")
-            print("[FSM] 0- Go Back")
-            choice = input("\n[FSM] Select an option: ")
-            print("[FSM] -----------------------------------------------\n")
-            if choice in "12":
-                return "event_test" + str(2 + int(choice))
-            elif choice == "0":
-                return "event_idle"
-            else:
-                print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
-                continue
-    def menu_tests(self):
-        while True:
-            print("\n[FSM] ----------------- POPEYE MENU -----------------")
-            print(f"[FSM] 2- TEST2: Change Mode to ready: {YELLOW}(GUIDED){RESET} and arm {YELLOW}(FORCE){RESET}")
-            print("[FSM] 5- TEST5: Ready -> Takeoff (6m) -> Land")
-            print("[FSM] 6- TEST6: Ready -> Takeoff (6m) -> Search_square -> RTL")
-            print("[FSM] 7- TEST7: Ready -> Takeoff (6m) -> Asserv_cam_park -> RTL")
-            print("[FSM] 0- Go Back")
-            choice = input("\n[FSM] Select an option: ")
-            print("[FSM] -----------------------------------------------\n")
-            if choice in "234567":
-                return "event_test"+choice
-            elif choice == "0":
-                return "event_idle"
-            else:
-                print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
-                continue
-    def menu_payload_actions(self):
-        while True:
-            print("\n[FSM] ----------------- POPEYE MENU -----------------")
-            print("[FSM] 1- Open (drop) payload.")
-            print("[FSM] 2- Close (reload) payload")
-            print("[FSM] 0- Go Back")
-            choice = input("\n[FSM] Select an option: ")
-            print("[FSM] -----------------------------------------------\n")
-            if choice == "1":
-                return "event_payload_drop"
-            if choice == "2":
-                return "event_payload_reload"
-            elif choice == "0":
-                return "event_idle"
-            else:
-                print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
-                continue
-    def menu_action(self):
-        while True:
-            print("\n[FSM] ----------------- CONTROL MENU -----------------")
-            print("[FSM] 0- Go Back")
-            choice = input("\n[FSM] Select an option: ")
-            print("[FSM] -----------------------------------------------")
-            if choice in "0":
-                break
-            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
-    def menu_custom_auto_plan(self):
-        while True:
-            print("\n[FSM] ----------------- CONTROL MENU -----------------")
-            # Donc: on doit avoir la possibiliter d'ecrire un plan sur mission planner
-            # Pour ca on doit le selectionner dans un dossier préalablement créé
-            # Ca affiche alors le nom du plan en haut du menu
-            # L'option 2 permet de write + lancer ce plan précisement : il faut etre sur qu'on ne peut pas avoir le cas ou le plan afficher n'est pas celui voulu.
-            # Petit précision : on doit pouvoir choisir des donnée comme : le point d'attérissage, ... il y a 2 méthode pour ca 
-            #    - On pré défini tout nos plan et quand on land "go to", on a un if(go to) => menu_select_coor_to_go_to.
-            #    - On trouve une méthode pour déclancher ces menu automatiquement. Par example avec un FUNCTION_AUX id = 1. On lit tout le fichier du plan de mission et si on touve id=1 alors on sait qu'il faut pop un menu
-            # DANS TOUT LES CAS: la possibilité de modifier les plans dans le menu ROS2 n'est pas prioritaire dans le sens ou on pourra rapidement les refaire sur mission planner.
-            # Avoir un objet menu serait bien. J'en ferais un Node ROS2 complet a l'occas.
-            
-            print("ICI DOIT ETRE AFFICHER LE NOM DU PLAN ACTUELLEMENT EN 'SELECTION'")   
-            print("[FSM] 1- Choose a custom flight plan")
-            print("[FSM] 2- Launch it")
-            print("[FSM] 0- Go Back")
-            choice = input("\n[FSM] Select an option: ")
-            print("[FSM] -----------------------------------------------")
-            if choice in "0":
-                break
-            print(f"{YELLOW}[FSM] Invalid option. Please select a valid number.{RESET}")
-    def menu_select_repo_coord(self):
-        print("[FSM] ----------------- CHOSE REPOSITION COORDONATES -----------------")
-        self.repo_lat = float(input("[FSM] Lat: "))
-        self.repo_lon = float(input("[FSM] Lon: "))
-        self.repo_alt = float(input("[FSM] Alt: "))
-        print("[FSM] ----------------------------------------------------------------\n")
-            
-        
+      
     ###### STATE AND TRANSITION ACTIONS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
     ### Start and end states
     @idle.enter
     def on_enter__idle(self):
-        PopeyeFSM.event = "idle"
-        self.menu_idle()
+        PopeyeFSM.event = "event_idle"
+        if self.node.task_name is None:
+            print(f"{YELLOW}[FSM] No task topic was yet published{RESET}")
+        elif self.node.task_name == "reposition":
+            print("[FSM] Launching task 'reposition'")
+            # self.repo_lat = 
+            # self.repo_lon = 
+            # self.repo_alt = 
+            PopeyeFSM.event = "event_WS2"
+        else:
+            print(f"{YELLOW}[FSM] Task name does not exists{RESET}")
+        sleep(1)
         self.send(PopeyeFSM.event)
     @terminated.enter
     def on_enter__terminated(self):
@@ -324,12 +209,6 @@ class PopeyeFSM(StateMachine):
         print("\n[FSM] > Doing RTL.")
         self.node.call__rtl()
         print("[FSM] > RTL done.")
-        self.send(PopeyeFSM.event)
-        
-    ### WS1
-    @ws1__select_coord.enter
-    def ws1_on_enter__select_coord(self):
-        self.menu_select_repo_coord()
         self.send(PopeyeFSM.event)
         
     ### WS2: Firefighter states

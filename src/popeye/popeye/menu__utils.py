@@ -13,6 +13,10 @@ tasks = {
         "description": "Move to a user define GPS position",
         "params": [ {"name": "target_position", "type": "GpsPosition"} ]
     },
+    "idle": {
+        "description": "The drone has to stay idle",
+        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+    },
 }
 
 ############################################################################################################################################################################################################################
@@ -30,22 +34,22 @@ def task_menu():
     elif choice in "123":
         return int(choice)
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#----- Function to CREATE THE USER MENU for tasks ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-def create_task_executor_msg(choice):
+#----- Function to CHOSE PARAMS for tasks ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+def create_task_msg(choice):
     try:
         ## Get all task keys and names
-        task_key = list(tasks.keys())[choice-1]
-        task_data = tasks[task_key]
+        task_name = list(tasks.keys())[choice-1]
+        task_data = tasks[task_name]
         ## Get args needed for the tasks
         args = []
         for param in task_data["params"]:
-            pargs, pval = ask_for_input(param)
+            pval = ask_for_input(param)
             task_arg_msg = TaskArgument()
             if param["type"] == "GpsPosition":
                 task_arg_msg.gps_position = pval
             args.append(task_arg_msg)
         ## Return the task
-        return Task(task_name=task_key, arguments=args)
+        return Task(task_name=task_name, arguments=args)
     except Exception as e:
         print(f"{YELLOW} Could not create the task : '{e}'{RESET}")
         return None
@@ -58,6 +62,6 @@ def ask_for_input(param):
         x = float(input(f"  {name}.lat: "))
         y = float(input(f"  {name}.lon: "))
         z = float(input(f"  {name}.alt: "))
-        return name, GpsPosition(lat=x, lon=y, alt=z)
+        return GpsPosition(lat=x, lon=y, alt=z)
     else:
         raise ValueError(f"Unsupported type: {ptype}")

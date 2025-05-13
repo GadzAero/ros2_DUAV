@@ -27,7 +27,7 @@ class MenuNode(Node):
         self.create_timer(0.5, self.timer_cb__pub_task, callback_group=MutuallyExclusiveCallbackGroup())
 
         ### General parameter
-        self.task_msg = Task()
+        self.task_msg = Task(task_name="idle")
         
         self.get_logger().info("NODE MenuNode STARTED.")
 
@@ -38,7 +38,7 @@ class MenuNode(Node):
     def timer_cb__menu(self):
         while True:
             choice = menu_utils.task_menu()
-            next_task_msg = menu_utils.create_task_executor_msg(choice)
+            next_task_msg = menu_utils.create_task_msg(choice)
             if not next_task_msg is None:
                 self.task_msg = next_task_msg
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
