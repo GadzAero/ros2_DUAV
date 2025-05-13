@@ -1,2 +1,2 @@
 string task_name
-TaskArgument[] arguments
+TaskParams[] arguments

@@ -34,7 +34,7 @@ set(msg_file
   "msg/Attitude.msg"
   "msg/Deltatarget.msg"
   "msg/Targetpos.msg"
-  "msg/TaskArgument.msg"
+  "msg/TaskParams.msg"
   "msg/Task.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}

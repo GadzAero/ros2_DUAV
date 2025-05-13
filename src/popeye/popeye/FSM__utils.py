@@ -9,6 +9,8 @@ from popeye.PARAMS_utils import *
 from statemachine import StateMachine, State, Event
 # Import geopy utils
 import geopy.distance as geodst
+# Import interfaces
+from interfaces.msg import GpsPosition, Task, TaskParams
 
 ##################################################################################################################################################################################################################################################################################################################################################################
 ##### FINITE STATE MACHINE FOR POPEYE ORDER CONTROL ##############################################################################################################################################################################################################################################################################################################
@@ -99,10 +101,11 @@ class PopeyeFSM(StateMachine):
             print(f"{YELLOW}[FSM] No task topic was yet published{RESET}")
         elif self.node.task_name == "reposition":
             print("[FSM] Launching task 'reposition'")
-            # self.repo_lat = 
-            # self.repo_lon = 
-            # self.repo_alt = 
-            PopeyeFSM.event = "event_WS2"
+            gps_repo = self.node.task_params[0].gps_position
+            self.repo_lat = gps_repo.lat
+            self.repo_lon = gps_repo.lon
+            self.repo_alt = gps_repo.alt
+            PopeyeFSM.event = "event_WS1"
         else:
             print(f"{YELLOW}[FSM] Task name does not exists{RESET}")
         sleep(1)

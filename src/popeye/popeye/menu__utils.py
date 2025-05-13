@@ -3,7 +3,7 @@
 # General importation
 from popeye.PARAMS_utils import *
 # Import Intefaces
-from interfaces.msg import GpsPosition, TaskArgument, Task
+from interfaces.msg import GpsPosition, TaskParams, Task
 from interfaces.action import ExecuteTask
 
 ############################################################################################################################################################################################################################
@@ -44,7 +44,7 @@ def create_task_msg(choice):
         args = []
         for param in task_data["params"]:
             pval = ask_for_input(param)
-            task_arg_msg = TaskArgument()
+            task_arg_msg = TaskParams()
             if param["type"] == "GpsPosition":
                 task_arg_msg.gps_position = pval
             args.append(task_arg_msg)

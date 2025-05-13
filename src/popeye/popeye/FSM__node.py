@@ -11,7 +11,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop, TakePhoto, TakeVideo
 from interfaces.action import Takeoff, Land, Reposition
-from interfaces.msg import Fire, GpsPosition, Task
+from interfaces.msg import Fire, GpsPosition, Task, TaskParams
 # Import FSM utils
 import popeye.FSM__utils as fsm
 
@@ -53,7 +53,7 @@ class FSMNode(Node):
         self.is_fire = False
         self.cam_park_pos = None
         self.task_name = None
-        self.task_arguments = None
+        self.task_params = None
         self.sm = None
         
         self.get_logger().info(" > NODE FSM__node STARTED.")
@@ -101,8 +101,8 @@ class FSMNode(Node):
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for TASK  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def sub_cb__task(self, msg):
-        self.task_name      = msg.task_name
-        self.task_arguments = msg.arguments
+        self.task_name   = msg.task_name # Type: string
+        self.task_params = msg.arguments # Type: TaskParams(.msg)
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for FIRE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def sub_cb__fire(self, msg):
