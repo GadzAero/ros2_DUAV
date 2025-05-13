@@ -1,0 +1,6 @@
+string task_name
+TaskArgument[] arguments
+---
+bool success
+---
+string message

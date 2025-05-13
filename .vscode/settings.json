@@ -1,0 +1,12 @@
+{
+    "cSpell.words": [
+        "ADRUPILOT",
+        "mavlink",
+        "mavros",
+        "mavutil",
+        "pymavlink",
+        "rclpy",
+        "SITL",
+        "STATUSTEXT"
+    ]
+}

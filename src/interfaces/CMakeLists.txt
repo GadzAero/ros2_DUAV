@@ -26,6 +26,7 @@ set(act_file
   "action/Reposition.action"
   "action/PrecisionLand.action"
   "action/Land.action"
+  "action/ExecuteTask.action"
 )
 set(msg_file
   "msg/Fire.msg"
@@ -33,6 +34,8 @@ set(msg_file
   "msg/Attitude.msg"
   "msg/Deltatarget.msg"
   "msg/Targetpos.msg"
+  "msg/TaskArgument.msg"
+  "msg/Task.msg"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_file}

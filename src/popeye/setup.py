@@ -26,7 +26,7 @@ setup(
             'FSM__node         = popeye.FSM__node:main',
             'CAM__node         = popeye.CAM__node:main',
             'ARUCO__node       = popeye.ARUCO__node:main',
-            'ASSERV__node      = popeye.ASSERV__node:main',
+            'menu__node        = popeye.menu__node:main',
         ],
     },
 )
