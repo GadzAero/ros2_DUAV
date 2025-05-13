@@ -17,6 +17,43 @@ tasks = {
         "description": "The drone has to stay idle",
         "params": [ {"name": "target_position", "type": "GpsPosition"} ]
     },
+    "WS1": {
+        "description": "GoTo and land",
+        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+    },    
+    "WS2": {
+        "description": "Workshop FireFighter",
+        "params": [ ]
+    },        
+    "WS3": {
+        "description": "Precision landing",
+        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+    },        
+    "Payload action 1": {
+        "description": "Open (drop) payload",
+        "params": [ {} ]
+    },  
+    "Payload action 2": {
+        "description": "Close (reload) payload",
+        "params": [ {} ]
+    },  
+    "Test 1": {
+        "description": "Change Mode to ready and arm",
+        "params": [ {} ]
+    },  
+    "Test 2": {
+        "description": "Ready -> Takeoff (6m) -> Land",
+        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+    },  
+    "Test 3": {
+        "description": "Ready -> Takeoff (6m) -> Search_square -> RTL",
+        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+    },  
+    "Test 4": {
+        "description": "Ready -> Takeoff (6m) -> Asserv_cam_park -> RTL",
+        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+    },  
+
 }
 
 ############################################################################################################################################################################################################################
@@ -31,7 +68,7 @@ def task_menu():
     choice = input("Choice: ")
     if choice == "0":
         print("Exiting.")
-    elif choice in "123":
+    elif choice in "1234567891011":
         return int(choice)
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----- Function to CHOSE PARAMS for tasks ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
