@@ -23,28 +23,28 @@ class FSMNode(Node):
         
         ### ROS2 Callbacks
         ## Callback groups
-        non_critical_group = ReentrantCallbackGroup()
+        cb_1 = ReentrantCallbackGroup()
         ## Timers
         self.create_timer(1,    self.timer_cb__fsm,  callback_group=MutuallyExclusiveCallbackGroup())
         self.create_timer(0.01, self.timer_cb__test, callback_group=MutuallyExclusiveCallbackGroup())
         ## Subscribers
-        self.sub__fire         = self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=non_critical_group)
-        self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=non_critical_group)
-        self.sub__cam_fire_pos = self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=non_critical_group)
-        self.sub__cam_park_pos = self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=non_critical_group)
+        self.sub__fire         = self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=cb_1)
+        self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=cb_1)
+        self.sub__cam_fire_pos = self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=cb_1)
+        self.sub__cam_park_pos = self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=cb_1)
         ## Services clients
-        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=non_critical_group)
-        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=non_critical_group)
-        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=non_critical_group)
-        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=non_critical_group)
-        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=non_critical_group)
-        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=non_critical_group)
-        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=non_critical_group)
-        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=non_critical_group)
+        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=cb_1)
+        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=cb_1)
+        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=cb_1)
+        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=cb_1)
+        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=cb_1)
+        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=cb_1)
+        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=cb_1)
+        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=cb_1)
         ## Actions clients
-        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=non_critical_group)
-        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=non_critical_group)
-        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=non_critical_group)
+        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=cb_1)
+        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=cb_1)
+        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=cb_1)
 
         ### GLOBAL PARAMS
         self.cancel_action = False
