@@ -27,31 +27,31 @@ tasks = {
     },        
     "WS3": {
         "description": "Precision landing",
-        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+        "params": [  ]
     },        
     "Payload action 1": {
         "description": "Open (drop) payload",
-        "params": [ {} ]
+        "params": [  ]
     },  
     "Payload action 2": {
         "description": "Close (reload) payload",
-        "params": [ {} ]
+        "params": [  ]
     },  
     "Test 1": {
         "description": "Change Mode to ready and arm",
-        "params": [ {} ]
+        "params": [  ]
     },  
     "Test 2": {
         "description": "Ready -> Takeoff (6m) -> Land",
-        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+        "params": [  ]
     },  
     "Test 3": {
         "description": "Ready -> Takeoff (6m) -> Search_square -> RTL",
-        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+        "params": [  ]
     },  
     "Test 4": {
         "description": "Ready -> Takeoff (6m) -> Asserv_cam_park -> RTL",
-        "params": [ {"name": "target_position", "type": "GpsPosition"} ]
+        "params": [  ]
     },  
 
 }

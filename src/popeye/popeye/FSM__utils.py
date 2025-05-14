@@ -102,7 +102,7 @@ class PopeyeFSM(StateMachine):
             # self.repo_lat = 
             # self.repo_lon = 
             # self.repo_alt = 
-            PopeyeFSM.event = "event_WS2"
+            PopeyeFSM.event = "event_WS1"
         else:
             print(f"{YELLOW}[FSM] Task name does not exists{RESET}")
         sleep(1)
