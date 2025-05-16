@@ -8,7 +8,7 @@ from popeye.PARAMS_utils import *
 # Import ROS2 utils
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, GoalResponse, CancelResponse
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 # Import MAVLink utils
 import pymavlink.dialects.v20.common as mavlink
@@ -89,8 +89,8 @@ class MAVManagerNode(Node):
         self.create_service(Rtl,     'rtl',            self.srv_cb__rtl,            callback_group=non_critical_group)
         self.create_service(Disarm,  'disarm',         self.srv_cb__disarm,         callback_group=non_critical_group)
         ## Action servers
-        ActionServer(self, Takeoff,       'takeoff',        self.act_cb__takeoff,        callback_group=non_critical_group)
-        ActionServer(self, Reposition,    'reposition',     self.act_cb__reposition,     callback_group=non_critical_group)
+        ActionServer(self, Takeoff,       'takeoff',        execute_callback=self.act_cb__takeoff, cancel_callback=self.cancel_cb__takeoff, callback_group=non_critical_group)
+        ActionServer(self, Reposition,    'reposition',     execute_callback=self.act_cb__reposition, callback_group=non_critical_group)
         ActionServer(self, Land,          'land',           self.act_cb__land,           callback_group=non_critical_group)
         ActionServer(self, PrecisionLand, 'precision_land', self.act_cb__precision_land, callback_group=non_critical_group)
 
@@ -278,6 +278,13 @@ class MAVManagerNode(Node):
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
         return Takeoff.Result(success=True)
+    def cancel_cb__takeoff(self, goal_handle):
+        self.get_logger().warn("      -> Canceled...")
+        return GoalResponse.ACCEPT
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to REPOSITION ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__reposition(self, goal_handle):
