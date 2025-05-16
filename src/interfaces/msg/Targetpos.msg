@@ -1,2 +1,0 @@
-float32 lat_fire
-float32 lon_fire

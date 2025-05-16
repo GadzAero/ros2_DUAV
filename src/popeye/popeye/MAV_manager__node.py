@@ -75,10 +75,12 @@ class MAVManagerNode(Node):
         ## TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
         self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
         ## Publishers
+        self.pub__state     = self.create_publisher(State,       'state',        10, callback_group=non_critical_group)
         self.pub__fire_coor = self.create_publisher(Fire,        'fire',         10, callback_group=non_critical_group)
         self.pub__attitude  = self.create_publisher(Attitude,    'uav_attitude', 10, callback_group=non_critical_group)
         self.pub__position  = self.create_publisher(GpsPosition, 'uav_position', 10, callback_group=non_critical_group)
         ## Subscribers
+        self.create_subscription(Task,        'task',         self.sub_cb__task,         10, callback_group=MutuallyExclusiveCallbackGroup())
         self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=non_critical_group)
         self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=non_critical_group)
         ## Services
@@ -89,8 +91,8 @@ class MAVManagerNode(Node):
         self.create_service(Rtl,     'rtl',            self.srv_cb__rtl,            callback_group=non_critical_group)
         self.create_service(Disarm,  'disarm',         self.srv_cb__disarm,         callback_group=non_critical_group)
         ## Action servers
-        ActionServer(self, Takeoff,       'takeoff',        execute_callback=self.act_cb__takeoff, cancel_callback=self.cancel_cb__takeoff, callback_group=non_critical_group)
-        ActionServer(self, Reposition,    'reposition',     execute_callback=self.act_cb__reposition, callback_group=non_critical_group)
+        ActionServer(self, Takeoff,       'takeoff',        self.act_cb__takeoff,        callback_group=non_critical_group)
+        ActionServer(self, Reposition,    'reposition',     self.act_cb__reposition,     callback_group=non_critical_group)
         ActionServer(self, Land,          'land',           self.act_cb__land,           callback_group=non_critical_group)
         ActionServer(self, PrecisionLand, 'precision_land', self.act_cb__precision_land, callback_group=non_critical_group)
 
@@ -101,6 +103,8 @@ class MAVManagerNode(Node):
         ## Timers for debug 
         self.elapsed_time = -time.time()
         self.start_time = time.time()
+        ## Cancel
+        self.cancel_action = False
         
         self.get_logger().info("NODE MAV_manager__node STARTED.")
         
@@ -196,7 +200,14 @@ class MAVManagerNode(Node):
         # print()
         # self.get_logger().info(f" >>> CAM_PARK_POS:{self.pos_cam_park} <<<")
         # print()
-
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for CAM PARK POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__task(self, msg):
+       self.cancel_action = True
+        print()
+        self.getlogger().info(f" >>> Canceling !!! <<<")
+        print()
+_
     ############################################################################################################################################################################################################################
     ##### ACTIONS CALLBACK ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -234,7 +245,7 @@ class MAVManagerNode(Node):
                 is_pland_success = False
                 break
             ## Publish feedback
-            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=float(self.uav_alt), dist_target=float(dist) ,land_state=str(self.landed_state)))
+            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=float(self.uav_alt), dist_target=float(dist), land_state=str(self.landed_state)))
             self.get_logger().info(f"      ... Precision land {i} (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
             sleep(1)
             
@@ -246,7 +257,7 @@ class MAVManagerNode(Node):
             return PrecisionLand.Result(success=False)
         while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
             dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
-            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=self.uav_alt, dist_target=dist ,land_state=self.landed_state))
+            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=self.uav_alt, dist_target=dist, land_state=self.landed_state))
             self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
             sleep(1)
         
@@ -272,19 +283,12 @@ class MAVManagerNode(Node):
             return Takeoff.Result(success=False)
         
         while self.landed_state != "MAV_LANDED_STATE_IN_AIR":
-            goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.uav_alt, state=self.landed_state))
-            self.get_logger().info(f"      ... Taking off (current_alt:{self.uav_alt}, state:{self.landed_state})")
+            goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.uav_alt, land_state=self.landed_state))
+            self.get_logger().info(f"      ... Taking off (current_alt:{self.uav_alt}, land_state:{self.landed_state})")
             sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
         return Takeoff.Result(success=True)
-    def cancel_cb__takeoff(self, goal_handle):
-        self.get_logger().warn("      -> Canceled...")
-        return GoalResponse.ACCEPT
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to REPOSITION ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__reposition(self, goal_handle):
@@ -321,8 +325,8 @@ class MAVManagerNode(Node):
             return Land.Result(success=False)
         
         while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
-            goal_handle.publish_feedback(Land.Feedback(current_alt=self.uav_alt, state=self.landed_state))
-            self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, state:{self.landed_state})")
+            goal_handle.publish_feedback(Land.Feedback(current_alt=self.uav_alt, landed_state=self.landed_state))
+            self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, landed_state:{self.landed_state})")
             sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()

@@ -32,8 +32,8 @@ set(msg_file
   "msg/Fire.msg"
   "msg/GpsPosition.msg"
   "msg/Attitude.msg"
-  "msg/Deltatarget.msg"
-  "msg/Targetpos.msg"
+  "msg/FeedbackParams.msg"
+  "msg/State.msg"
   "msg/TaskParams.msg"
   "msg/Task.msg"
 )
