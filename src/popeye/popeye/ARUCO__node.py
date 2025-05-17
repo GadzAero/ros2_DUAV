@@ -174,7 +174,7 @@ def main(args=None):
     ### Creating the mutlithread executor
     node = ARUCONode()
     # executor = rclpy.executors.SingleThreadedExecutor()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=100)
     executor.add_node(node)
     try:
       executor.spin()

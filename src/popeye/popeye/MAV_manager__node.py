@@ -294,16 +294,19 @@ class MAVManagerNode(Node):
             return Takeoff.Result(success=False)
         
         while self.landed_state != "MAV_LANDED_STATE_IN_AIR":
-            while self.action_paused or self.land:
-                self.get_logger().warn("      -> Action paused")
-                if self.go_home:
-                    self.get_logger().warn("      -> Canceled to go_home or land")
-                    self.go_home       = False
-                    self.land          = False
-                    self.action_paused = False
-                    goal_handle.abort()
-                    return Takeoff.Result(success=True)
-
+            # while self.action_paused or self.land:
+            #     self.get_logger().warn("      -> Action paused")
+            #     if not (self.mav_master, self.uav_lat, self.uav_lon, self.uav_alt):
+            #         self.get_logger().warn("      -> Cancel: CALL TO POSITION FAILED !!!")
+            #         goal_handle.abort()
+            #         return Takeoff.Result(success=False)
+            #     if self.go_home:
+            #         self.get_logger().warn("      -> Canceled to go_home or land")
+            #         self.go_home       = False
+            #         self.land          = False
+            #         self.action_paused = False
+            #         goal_handle.abort()
+            #         return Takeoff.Result(success=True)
             goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.uav_alt, land_state=self.landed_state))
             self.get_logger().info(f"      ... Taking off (current_alt:{self.uav_alt}, land_state:{self.landed_state})")
             sleep(1)
@@ -447,7 +450,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = MAVManagerNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=10)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=100)
     executor.add_node(node)
     try:
         executor.spin()

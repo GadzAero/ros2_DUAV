@@ -66,7 +66,7 @@ class MenuNode(Node):
     def sub_cb__state(self, msg):
         self.task_name = msg.task_name
         self.skill_name = msg.skill_name
-        self.get_logger().info(f" > Received: State -> task_name:{self.task_name}, skill_name:{self.skill_name}")
+        # self.get_logger().info(f" > Received: State -> task_name:{self.task_name}, skill_name:{self.skill_name}")
 
 ############################################################################################################################################################################################################################
 ##### Node entry point ############################################################################################################################################################################################################################
@@ -75,7 +75,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = MenuNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=100)
     executor.add_node(node)
     try:
         executor.spin()

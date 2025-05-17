@@ -19,14 +19,14 @@ import popeye.FSM__utils as fsm
 ##### Node MAVLink Manager #####################################################################################################################################################################
 class FSMNode(Node):
     def __init__(self):
-        super().__init__('FSM_interface_node', namespace='POPEYE')
+        super().__init__('FSM__node', namespace='POPEYE')
         
         ### ROS2 Callbacks
         ## Callback groups
         cb_1 = ReentrantCallbackGroup()
         ## Timers
         # self.create_timer(0.1, self.timer_cb__test,       callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_timer(3,   self.timer_cb__init_fsm,   callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(1.0,   self.timer_cb__init_fsm,   callback_group=MutuallyExclusiveCallbackGroup())
         self.create_timer(0.5, self.timer_cb__send_state, callback_group=MutuallyExclusiveCallbackGroup())
         ## Publishers
         self.pub__state = self.create_publisher(State, 'state', 10, callback_group=MutuallyExclusiveCallbackGroup())
@@ -60,6 +60,8 @@ class FSMNode(Node):
         self.state = None
         self.task_name = "idle"
         self.skill_name =""
+        self.uav_pos = None
+        self.uav_alt = None
         
         self.get_logger().info(" > NODE FSM__node STARTED.")
     
@@ -389,7 +391,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = FSMNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=10)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=100)
     executor.add_node(node)
     try:
         executor.spin()

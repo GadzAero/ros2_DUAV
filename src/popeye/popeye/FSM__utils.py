@@ -96,10 +96,12 @@ class PopeyeFSM(StateMachine):
     ### Start and end states
     @st__idle.enter
     def on_enter__idle(self):
+        print("------------------############################")
         PopeyeFSM.event = "event_idle"
-        print(self.node.task_name)
+        # print(self.node.task_name)
         if self.node.task_name is "idle":
-            print(f"{YELLOW}[FSM] No task topic was yet published{RESET}")
+            # print(f"{YELLOW}[FSM] No task topic was yet published{RESET}")
+            pass
         elif self.node.task_name == "reposition":
             print("[FSM] Launching task 'reposition'")
             gps_repo = self.node.task_params[0].gps_position
@@ -108,7 +110,8 @@ class PopeyeFSM(StateMachine):
             self.repo_alt = gps_repo.alt
             PopeyeFSM.event = "event_WS1"
         else:
-            print(f"{YELLOW}[FSM] Task name '{self.node.task_name}' does not exists{RESET}")
+            # print(f"{YELLOW}[FSM] Task name '{self.node.task_name}' does not exists{RESET}")
+            pass
         self.task_name = PopeyeFSM.event
         self.send(PopeyeFSM.event)
     @st__terminated.enter
