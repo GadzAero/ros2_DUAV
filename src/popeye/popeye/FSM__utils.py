@@ -20,22 +20,22 @@ class PopeyeFSM(StateMachine):
     
     ###### STATES ################################################################################################################################################################################################################################################################################################################################################
     ### Start and end states
-    idle       = State('Idle', initial=True)
-    terminated = State('Terminated', final=True)
+    st__idle       = State('st__idle', initial=True)
+    st__terminated = State('st__terminated', final=True)
     
     ### Standard states
-    std__ready           = State('std__Ready')
-    std__ready_force     = State('std__ReadyForce')
-    std__takeoffed       = State('std__Takeoffed')
-    std__repositioned    = State('std__Repositioned')
-    std__square_search   = State('std__SquareSearch')
-    std__asserv_cam_park = State('std__AsservCamPark')
-    std__payload_drop    = State('std__PayloadDrop')
-    std__payload_reload  = State('std__PayloadReload')
-    std__take_photo      = State('std__TakePhoto')
-    std__take_video      = State('std__TakeVideo')
-    std__landed          = State('std__Landed')
-    std__rtl             = State('std__Rtl')
+    st__ready           = State('st__ready')
+    st__ready_force     = State('st__ready_force')
+    st__takeoffed       = State('st__takeoffed')
+    st__repositioned    = State('st__repositioned')
+    st__square_search   = State('st__square_search')
+    st__asserv_cam_park = State('st__asserv_cam_park')
+    st__payload_drop    = State('st__payload_drop')
+    st__payload_reload  = State('st__payload_reload')
+    st__take_photo      = State('st__take_photo')
+    st__take_video      = State('st__take_video')
+    st__landed          = State('st__landed')
+    st__rtl             = State('st__rtl')
     
     ### Workshop 2
     ws2__wait_for_fire_coords = State('WS2__WaitForFireCoords')
@@ -43,50 +43,50 @@ class PopeyeFSM(StateMachine):
 
     ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
     ### Workshops events
-    event_terminate = Event(idle.to(terminated))
-    event_idle = Event(idle.to(idle))
+    event_terminate = Event(st__idle.to(st__terminated))
+    event_idle = Event(st__idle.to(st__idle))
     # Reposition
-    event_WS1 = Event(idle.to(std__ready)
-                     | std__ready.to(std__takeoffed)
-                     | std__takeoffed.to(std__repositioned)
-                     | std__repositioned.to(std__landed)
-                     | std__landed.to(idle))
+    event_WS1 = Event(st__idle.to(st__ready)
+                     | st__ready.to(st__takeoffed)
+                     | st__takeoffed.to(st__repositioned)
+                     | st__repositioned.to(st__landed)
+                     | st__landed.to(st__idle))
     # Firefight
-    event_WS2 = Event(idle.to(ws2__wait_for_fire_coords)
-                     | ws2__wait_for_fire_coords.to(std__ready)
-                     | std__ready.to(std__takeoffed)
-                     | std__takeoffed.to(std__repositioned)
-                     | std__repositioned.to(ws2__get_cam_fire_pos)
-                     | ws2__get_cam_fire_pos.to(std__square_search)
-                     | std__square_search.to(std__payload_drop)
-                     | std__payload_drop.to(std__rtl) 
-                     | std__rtl.to(idle))
+    event_WS2 = Event(st__idle.to(ws2__wait_for_fire_coords)
+                     | ws2__wait_for_fire_coords.to(st__ready)
+                     | st__ready.to(st__takeoffed)
+                     | st__takeoffed.to(st__repositioned)
+                     | st__repositioned.to(ws2__get_cam_fire_pos)
+                     | ws2__get_cam_fire_pos.to(st__square_search)
+                     | st__square_search.to(st__payload_drop)
+                     | st__payload_drop.to(st__rtl) 
+                     | st__rtl.to(st__idle))
     # Skills
-    event_payload_reload = Event(idle.to(std__payload_reload)
-                                | std__payload_reload.to(idle))
-    event_payload_drop = Event(idle.to(std__payload_drop)
-                              | std__payload_drop.to(idle))
+    event_payload_reload = Event(st__idle.to(st__payload_reload)
+                                | st__payload_reload.to(st__idle))
+    event_payload_drop = Event(st__idle.to(st__payload_drop)
+                              | st__payload_drop.to(st__idle))
     ## Test events
-    event_test2 = Event(idle.to(std__ready_force)
-                       | std__ready_force.to(idle))
-    event_test3 = Event(idle.to(std__take_photo)
-                       | std__take_photo.to(idle))
-    event_test4 = Event(idle.to(std__take_video)
-                       | std__take_video.to(idle))
-    event_test5 = Event(idle.to(std__ready)
-                       | std__ready.to(std__takeoffed)
-                       | std__takeoffed.to(std__landed)
-                       | std__landed.to(idle))
-    event_test6 = Event(idle.to(std__ready)
-                       | std__ready.to(std__takeoffed)
-                       | std__takeoffed.to(std__square_search)
-                       | std__square_search.to(std__rtl)
-                       | std__rtl.to(idle))
-    event_test7 = Event(idle.to(std__ready)
-                       | std__ready.to(std__takeoffed)
-                       | std__takeoffed.to(std__asserv_cam_park)
-                       | std__asserv_cam_park.to(std__rtl)
-                       | std__rtl.to(idle))
+    event_test2 = Event(st__idle.to(st__ready_force)
+                       | st__ready_force.to(st__idle))
+    event_test3 = Event(st__idle.to(st__take_photo)
+                       | st__take_photo.to(st__idle))
+    event_test4 = Event(st__idle.to(st__take_video)
+                       | st__take_video.to(st__idle))
+    event_test5 = Event(st__idle.to(st__ready)
+                       | st__ready.to(st__takeoffed)
+                       | st__takeoffed.to(st__landed)
+                       | st__landed.to(st__idle))
+    event_test6 = Event(st__idle.to(st__ready)
+                       | st__ready.to(st__takeoffed)
+                       | st__takeoffed.to(st__square_search)
+                       | st__square_search.to(st__rtl)
+                       | st__rtl.to(st__idle))
+    event_test7 = Event(st__idle.to(st__ready)
+                       | st__ready.to(st__takeoffed)
+                       | st__takeoffed.to(st__asserv_cam_park)
+                       | st__asserv_cam_park.to(st__rtl)
+                       | st__rtl.to(st__idle))
     
     def __init__(self, node):
         self.node = node
@@ -94,10 +94,11 @@ class PopeyeFSM(StateMachine):
       
     ###### STATE AND TRANSITION ACTIONS ####################################################################################################################################################################################################################################################################################################################################################################################################################################
     ### Start and end states
-    @idle.enter
+    @st__idle.enter
     def on_enter__idle(self):
         PopeyeFSM.event = "event_idle"
-        if self.node.task_name is None:
+        print(self.node.task_name)
+        if self.node.task_name is "idle":
             print(f"{YELLOW}[FSM] No task topic was yet published{RESET}")
         elif self.node.task_name == "reposition":
             print("[FSM] Launching task 'reposition'")
@@ -107,15 +108,15 @@ class PopeyeFSM(StateMachine):
             self.repo_alt = gps_repo.alt
             PopeyeFSM.event = "event_WS1"
         else:
-            print(f"{YELLOW}[FSM] Task name does not exists{RESET}")
-        sleep(1)
+            print(f"{YELLOW}[FSM] Task name '{self.node.task_name}' does not exists{RESET}")
+        self.task_name = PopeyeFSM.event
         self.send(PopeyeFSM.event)
-    @terminated.enter
+    @st__terminated.enter
     def on_enter__terminated(self):
-        print("\n[FSM] As terminated. Goodbye!")
+        print("\n[FSM] As st__terminated. Goodbye!")
         
     ### Standard states
-    @std__ready.enter
+    @st__ready.enter
     def std_on_enter__ready(self):
         print("\n[FSM] > GETTING READY.")
         self.node.call__set_mode("GUIDED")
@@ -123,7 +124,7 @@ class PopeyeFSM(StateMachine):
         print("[FSM] > READY.")
         self.send(PopeyeFSM.event)
         
-    @std__ready_force.enter
+    @st__ready_force.enter
     def std_on_enter__ready_force(self):
         print(f"\n[FSM] > GETTING READY {YELLOW}FORCE{RESET}.")
         self.node.call__set_mode("GUIDED")
@@ -131,21 +132,21 @@ class PopeyeFSM(StateMachine):
         print("[FSM] > READY.")
         self.send(PopeyeFSM.event)
         
-    @std__takeoffed.enter
+    @st__takeoffed.enter
     def std_on_enter__takeoff(self):
         print("\n[FSM] > TAKING OFF.")
         self.node.call__takeoff(6)
         print("[FSM] > TAKEOFFED.")
         self.send(PopeyeFSM.event)
         
-    @std__repositioned.enter
+    @st__repositioned.enter
     def std_on_enter__repositioned(self):
         print("\n[FSM] > REPOSITIONING.")
         self.node.call__reposition(self.repo_lat, self.repo_lon, self.repo_alt)
         print("[FSM] > REPOSITIONED.")
         self.send(PopeyeFSM.event)
         
-    @std__square_search.enter
+    @st__square_search.enter
     def std_on_enter__square_search(self):
         print("\n[FSM] > STARTING SQUARE SEARCH.")
         intersect = 0.4
@@ -158,7 +159,7 @@ class PopeyeFSM(StateMachine):
         print("[FSM] > END SQUARE SEARCH.")
         self.send(PopeyeFSM.event)
         
-    @std__asserv_cam_park.enter
+    @st__asserv_cam_park.enter
     def std_on_enter__asserv_cam_park(self):
         print("\n[FSM] > START ASSERV CAM PARK.")
         print(f"\n[FSM] ---------------------------------------")
@@ -172,42 +173,42 @@ class PopeyeFSM(StateMachine):
         print("[FSM] > END ASSERV CAM PARK.")
         self.send(PopeyeFSM.event)
         
-    @std__payload_drop.enter
+    @st__payload_drop.enter
     def std_on_enter__payload_drop(self):
         print("\n[FSM] > DROPPING.")
         self.node.call__payload_drop()
         print("[FSM] > DROPPED.")
         self.send(PopeyeFSM.event)
         
-    @std__payload_reload.enter
+    @st__payload_reload.enter
     def std_on_enter__payload_reload(self):
         print("\n[FSM] > PAYLOAD RELOADING (you have 5s).")
         self.node.call__payload_reload()
         print("[FSM] > PAYLOAD RELOADED.")
         self.send(PopeyeFSM.event)
         
-    @std__take_photo.enter
+    @st__take_photo.enter
     def std_on_enter__take_photo(self):
         print("\n[FSM] > TAKING PHOTO.")
         self.node.call__take_photo()
         print("[FSM] > PHOTO TAKEN.")
         self.send(PopeyeFSM.event)
         
-    @std__take_video.enter
+    @st__take_video.enter
     def std_on_enter__take_video(self):
         print("\n[FSM] > TAKING VIDEO.")
         self.node.call__take_video(3)
         print("[FSM] > VIDEO TAKEN.")
         self.send(PopeyeFSM.event)
         
-    @std__landed.enter
+    @st__landed.enter
     def std_on_enter__landed(self):
         print("\n[FSM] > LANDING.")
         self.node.call__land()
         print("[FSM] > LANDED.")
         self.send(PopeyeFSM.event)
         
-    @std__rtl.enter
+    @st__rtl.enter
     def std_on_enter__rtl(self):
         print("\n[FSM] > Doing RTL.")
         self.node.call__rtl()

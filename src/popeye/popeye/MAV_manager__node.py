@@ -17,7 +17,7 @@ from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
 from interfaces.action import Takeoff, Land, Reposition, PrecisionLand
-from interfaces.msg import Fire, Attitude, GpsPosition 
+from interfaces.msg import Fire, Attitude, GpsPosition, Task, State
 # Import MAV utils
 import popeye.MAV_manager__utils as mav_utils
 # Import geopy utils
@@ -75,12 +75,11 @@ class MAVManagerNode(Node):
         ## TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
         self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
         ## Publishers
-        self.pub__state     = self.create_publisher(State,       'state',        10, callback_group=non_critical_group)
         self.pub__fire_coor = self.create_publisher(Fire,        'fire',         10, callback_group=non_critical_group)
         self.pub__attitude  = self.create_publisher(Attitude,    'uav_attitude', 10, callback_group=non_critical_group)
         self.pub__position  = self.create_publisher(GpsPosition, 'uav_position', 10, callback_group=non_critical_group)
         ## Subscribers
-        self.create_subscription(Task,        'task',         self.sub_cb__task,         10, callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_subscription(State,       'state',        self.sub_cb__state,        10, callback_group=MutuallyExclusiveCallbackGroup())
         self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=non_critical_group)
         self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=non_critical_group)
         ## Services
@@ -104,12 +103,14 @@ class MAVManagerNode(Node):
         self.elapsed_time = -time.time()
         self.start_time = time.time()
         ## Cancel
-        self.cancel_action = False
-        
+        self.go_home       = False
+        self.land          = False
+        self.action_paused = False
         self.get_logger().info("NODE MAV_manager__node STARTED.")
         
     ############################################################################################################################################################################################################################
     ##### TIMER CALLBACK ############################################################################################################################################################################################################################
+    #----------------------------------
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Function to reiceive ALL  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def timer_cb__read_mavlink(self):
@@ -127,12 +128,12 @@ class MAVManagerNode(Node):
                 self.is_fire = True
                 self.fire_pos_lat = float(data[1])
                 self.fire_pos_lon = float(data[3])
-                msg_pub = Fire()
-                msg_pub.is_fire  = self.is_fire
-                msg_pub.lat_fire = self.fire_pos_lat
-                msg_pub.lon_fire = self.fire_pos_lon
-                self.pub__fire_coor.publish(msg_pub)
-                # self.get_logger().info(f"FIRE > Fire_lat: {self.fire_pos_lat} Fire_lon: {self.fire_pos_lon} Is_fire: {self.is_fire}")
+                msg = Fire()
+                msg.is_fire  = self.is_fire
+                msg.lat_fire = self.fire_pos_lat
+                msg.lon_fire = self.fire_pos_lon
+                self.pub__fire_coor.publish(msg)
+                # self.get_logger().info(f"SEND > State -> Fire_lat:{self.fire_pos_lat} Fire_lon:{self.fire_pos_lon} Is_fire:{self.is_fire}")
             else:
                 self.get_logger().info('RECEIVED > %s' % msg.text)
         ## For GLOBAL_POSITION_INT messages
@@ -141,11 +142,11 @@ class MAVManagerNode(Node):
             self.uav_lon = msg.lon/1e7
             self.uav_pos = (self.uav_lat, self.uav_lon)
             self.uav_alt = msg.relative_alt/1e3
-            msg_pub     = GpsPosition()
-            msg_pub.lat = self.uav_lat
-            msg_pub.lon = self.uav_lon
-            msg_pub.alt = self.uav_alt
-            self.pub__position.publish(msg_pub)
+            msg     = GpsPosition()
+            msg.lat = self.uav_lat
+            msg.lon = self.uav_lon
+            msg.alt = self.uav_alt
+            self.pub__position.publish(msg)
             # self.get_logger().info(f"RECEIVED > Lat: {self.uav_lat} Lon: {self.uav_lon} Alt: {self.uav_alt}")
         ## For LANDED_STATE messages
         elif msg_type == "EXTENDED_SYS_STATE":
@@ -172,15 +173,32 @@ class MAVManagerNode(Node):
             self.roll  = msg.roll
             self.pitch = msg.pitch
             self.yaw   = msg.yaw
-            msg_pub       = Attitude()
-            msg_pub.yaw   = self.yaw
-            msg_pub.pitch = self.pitch
-            msg_pub.roll  = self.roll
-            self.pub__attitude.publish(msg_pub)
+            msg       = Attitude()
+            msg.yaw   = self.yaw
+            msg.pitch = self.pitch
+            msg.roll  = self.roll
+            self.pub__attitude.publish(msg)
             # self.get_logger().info(f"RECEIVED > Yaw: {self.yaw} Pitch: {self.pitch} Roll: {self.roll}")
             
     ############################################################################################################################################################################################################################
     ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Timer to send STATE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__state(self, msg):
+        task_name  = msg.task_name
+        skill_name  = msg.skill_name
+        # self.get_logger().info(f"RECEIVED > State -> task_name:{task_name} skill_name:{skill_name}")
+        if task_name == "pause":
+            self.action_paused = True
+        elif task_name == "land":
+            self.action_paused = True
+            self.land = True
+        elif task_name == "go_home":
+            self.action_paused = True
+            self.go_home = True
+        elif task_name == "continue":
+            self.action_paused = True
+            self.go_home = True
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for CAM FIRE POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def sub_cb__cam_fire_pos(self, msg):
@@ -200,14 +218,7 @@ class MAVManagerNode(Node):
         # print()
         # self.get_logger().info(f" >>> CAM_PARK_POS:{self.pos_cam_park} <<<")
         # print()
-    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    #----- Subscriber for CAM PARK POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def sub_cb__task(self, msg):
-       self.cancel_action = True
-        print()
-        self.getlogger().info(f" >>> Canceling !!! <<<")
-        print()
-_
+
     ############################################################################################################################################################################################################################
     ##### ACTIONS CALLBACK ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -283,6 +294,16 @@ _
             return Takeoff.Result(success=False)
         
         while self.landed_state != "MAV_LANDED_STATE_IN_AIR":
+            while self.action_paused or self.land:
+                self.get_logger().warn("      -> Action paused")
+                if self.go_home:
+                    self.get_logger().warn("      -> Canceled to go_home or land")
+                    self.go_home       = False
+                    self.land          = False
+                    self.action_paused = False
+                    goal_handle.abort()
+                    return Takeoff.Result(success=True)
+
             goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.uav_alt, land_state=self.landed_state))
             self.get_logger().info(f"      ... Taking off (current_alt:{self.uav_alt}, land_state:{self.landed_state})")
             sleep(1)

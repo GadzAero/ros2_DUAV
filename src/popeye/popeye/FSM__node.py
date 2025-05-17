@@ -11,7 +11,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop, TakePhoto, TakeVideo
 from interfaces.action import Takeoff, Land, Reposition
-from interfaces.msg import Fire, GpsPosition, Task, TaskParams
+from interfaces.msg import Fire, GpsPosition, Task, TaskParams, State, FeedbackParams
 # Import FSM utils
 import popeye.FSM__utils as fsm
 
@@ -25,9 +25,11 @@ class FSMNode(Node):
         ## Callback groups
         cb_1 = ReentrantCallbackGroup()
         ## Timers
-        self.create_timer(0.1, self.timer_cb__test, callback_group=MutuallyExclusiveCallbackGroup())
-        self.create_timer(0.5, self.init_fsm, callback_group=MutuallyExclusiveCallbackGroup())
-        # self.create_timer(0.5, self.timer_cb__launch_task, callback_group=MutuallyExclusiveCallbackGroup())
+        # self.create_timer(0.1, self.timer_cb__test,       callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(3,   self.timer_cb__init_fsm,   callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(0.5, self.timer_cb__send_state, callback_group=MutuallyExclusiveCallbackGroup())
+        ## Publishers
+        self.pub__state = self.create_publisher(State, 'state', 10, callback_group=MutuallyExclusiveCallbackGroup())
         ## Subscribers
         self.create_subscription(Task,        'task',         self.sub_cb__task,         10, callback_group=MutuallyExclusiveCallbackGroup())
         self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=MutuallyExclusiveCallbackGroup())
@@ -52,17 +54,28 @@ class FSMNode(Node):
         self.cancel_action = False
         self.is_fire = False
         self.cam_park_pos = None
-        self.task_name = None
+        self.task_name = ""
         self.task_params = None
         self.sm = None
+        self.state = None
+        self.task_name = "idle"
+        self.skill_name =""
         
         self.get_logger().info(" > NODE FSM__node STARTED.")
     
     ############################################################################################################################################################################################################################
     ##### TIMERS CALLBACKS ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Timer to send STATE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def timer_cb__send_state(self):
+        self.get_logger().info(f"SEND > State -> task_name:{self.task_name} skill_name:{self.skill_name}")
+        msg = State()
+        msg.task_name  = str(self.task_name)
+        msg.skill_name = str(self.skill_name)
+        self.pub__state.publish(msg)
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Timer for FSM  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def init_fsm(self):
+    def timer_cb__init_fsm(self):
         self.get_logger().info(" > FSM started.")
         if not on_raspi:
             self.call__disarm(force=True)
@@ -103,6 +116,8 @@ class FSMNode(Node):
     def sub_cb__task(self, msg):
         self.task_name   = msg.task_name # Type: string
         self.task_params = msg.arguments # Type: TaskParams(.msg)
+        print(self.task_name)
+        print("self.task_name")
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for FIRE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def sub_cb__fire(self, msg):
@@ -162,12 +177,6 @@ class FSMNode(Node):
         action_future = goal_handle_future.result().get_result_async()
         while not action_future.done():
             rclpy.spin_once(self, timeout_sec=0.5)
-            if self.cancel_action:
-                cancel_future =  goal_handle_future.result().cancel_goal_async()
-                rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=0.5)
-                self.get_logger().warning("       ==> TAKEOFF canceled")
-                self.call__rtl()
-                return False
             
         if not action_future.result().result.success:
             self.get_logger().warning("       ==> TAKEOFF failed")
