@@ -24,10 +24,13 @@ class CAMNode(Node):
     self.timer__read_frames = self.create_timer(0.05, self.timer_cb__read_frames, callback_group=MutuallyExclusiveCallbackGroup())
     
     ### START VIDEO CAPTURE
-    # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset.mp4")
-    # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset_diag.mp4")
-    # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing.mp4")
-    self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing_straight.mp4")
+    if use_camera:
+      self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing_straight.mp4")
+    else:
+      # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset.mp4")
+      # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset_diag.mp4")
+      # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing.mp4")
+      self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing_straight.mp4")
     self.cv_bridge = CvBridge()
    
   ############################################################################################################################################################################################################################

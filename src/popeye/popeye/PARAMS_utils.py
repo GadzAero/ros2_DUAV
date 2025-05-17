@@ -30,14 +30,17 @@ CONV = TO_RAD/EARTH_RAD
 # Debug
 on_raspi = False
 debug_cams = True
+use_camera = False
 if on_raspi:
     debug_cams = False
 
 # Path
 path_step = "/home/step/ros2_DUAV"
 path_felix = "/home/linux/ros2_DUAV"
-path_popeye = "/home/duav/ros2_DUAV"
-path_DUAV = path_felix
+path_popeye = "/home/popeye/ros2_DUAV"
+path_DUAV = path_step
+if on_raspi:
+    path_DUAV = path_popeye
 
 ############################################################################################################################################################################################################################
 ##### CONVERSION UTILS ############################################################################################################################################################################################################################
