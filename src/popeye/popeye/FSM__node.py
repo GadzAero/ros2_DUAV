@@ -11,7 +11,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop, TakePhoto, TakeVideo
 from interfaces.action import Takeoff, Land, Reposition
-from interfaces.msg import Fire
+from interfaces.msg import Fire, GpsPosition
 # Import FSM utils
 import popeye.FSM__utils as fsm
 
@@ -21,67 +21,92 @@ class FSMNode(Node):
     def __init__(self):
         super().__init__('FSM_interface_node', namespace='POPEYE')
         
+        ### ROS2 Callbacks
+        ## Callback groups
+        non_critical_group = ReentrantCallbackGroup()
+        ## Timers
+        self.create_timer(1,    self.timer_cb__fsm,  callback_group=MutuallyExclusiveCallbackGroup())
+        self.create_timer(0.01, self.timer_cb__test, callback_group=MutuallyExclusiveCallbackGroup())
+        ## Subscribers
+        self.sub__fire         = self.create_subscription(Fire,        'fire',         self.sub_cb__fire,         10, callback_group=non_critical_group)
+        self.sub__uav_position = self.create_subscription(GpsPosition, 'uav_position', self.sub_cb__uav_position, 10, callback_group=non_critical_group)
+        self.sub__cam_fire_pos = self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=non_critical_group)
+        self.sub__cam_park_pos = self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=non_critical_group)
+        ## Services clients
+        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=non_critical_group)
+        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=non_critical_group)
+        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=non_critical_group)
+        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=non_critical_group)
+        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=non_critical_group)
+        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=non_critical_group)
+        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=non_critical_group)
+        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=non_critical_group)
+        ## Actions clients
+        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=non_critical_group)
+        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=non_critical_group)
+        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=non_critical_group)
+
         ### GLOBAL PARAMS
         self.cancel_action = False
         self.is_fire = False
-        
-        ### SERVICE CLIENTS
-        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### ACTIONS CLIENTS
-        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
-        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### SUBSCRIBERS
-        self.sub__fire = self.create_subscription(Fire, 'fire', self.sub_cb__fire, 10, callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### TIMERS
-        self.timer__fsm = self.create_timer(1, self.timer_cb__fsm, callback_group=MutuallyExclusiveCallbackGroup())
+        self.cam_park_pos = None
         
         self.get_logger().info(" > NODE FSM__node STARTED.")
     
     ############################################################################################################################################################################################################################
     ##### TIMERS CALLBACKS ############################################################################################################################################################################################################################
     def timer_cb__fsm(self):
-        ### Start the FSM
-        if True:
-            self.call__disarm(force=True)
-            self.get_logger().warn("*********************************************")
-            self.get_logger().warn("*********************************************")
-            self.get_logger().warn("*********************************************")
-            self.get_logger().error("BE CAREFUL : YOU HAVE TO COMMENT THIS ON REAL DRONE OR IT WILL CRASH (on sim it is ok)")
-            self.get_logger().warn("*********************************************")
-            self.get_logger().warn("*********************************************")
-            self.get_logger().warn("*********************************************")
         self.get_logger().info(" > FSM started.")
+        if not on_raspi:
+            self.call__disarm(force=True)
+            self.get_logger().warn("!!!!!!!!! IT WILL CRASH !!!!!!!!!")
+            self.get_logger().warn("BE CAREFUL : YOU HAVE TO PASS IN 'on_raspi' mode (PARAMS_utils.py)")
+            self.get_logger().warn("!!!!!!!!! IT WILL CRASH !!!!!!!!!")
         ### Starting the FSM
         sm = fsm.PopeyeFSM(self)
-        ### Save the FSM graph and destry the timer
+        ### Save the FSM graph and destroy the timer
         sm._graph().write_png(path_DUAV+"/src/popeye/popeye//POPEYE_FSM.png")
         self.get_logger().warn(" > FSM ended.")
-        self.destroy_timer(self.timer__fsm)
+    def timer_cb__test(self):
+        self.get_logger().info(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     
     ############################################################################################################################################################################################################################
     ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Subscriber for FIRE  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    def sub_cb__fire(self, msg):
-        if msg.is_fire and not self.is_fire:
+    def sub_cb__fire(self, msg_sub):
+        if msg_sub.is_fire and not self.is_fire:
             self.is_fire  = True
-            self.lat_fire = msg.lat_fire
-            self.lon_fire = msg.lon_fire
+            self.lat_fire = msg_sub.lat_fire
+            self.lon_fire = msg_sub.lon_fire
             print()
             self.get_logger().warn(" >>> FIRE HAS BEEN SPOTTED <<<")
             self.get_logger().warn(f" >>> FIRE_LAT:{self.lat_fire} FIRE_LON:{self.lon_fire}<<<")
             print()
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for UAV_POSITION  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__uav_position(self, msg_sub):
+        print("uav_pos")
+        self.uav_pos = (msg_sub.lat, msg_sub.lon)
+        self.uav_alt = msg_sub.alt
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for CAM FIRE POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__cam_fire_pos(self, msg_sub):
+        print("cam_pos")
+        self.pos_cam_fire = (msg_sub.lat, msg_sub.lon)
+        self.alt_cam_fire = msg_sub.alt
+        print()
+        # self.get_logger().info(f" >>> CAM_FIRE_POS:{self.pos_cam_fire} <<<")
+        # print()
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for CAM PARK POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__cam_park_pos(self, msg_sub):
+        print("park_pos")
+        self.pos_cam_park = (msg_sub.lat, msg_sub.lon)
+        self.alt_cam_park = msg_sub.alt
+        print()
+        # self.get_logger().info(f" >>> CAM_PARK_POS:{self.pos_cam_park} <<<")
+        # print()
     
     ############################################################################################################################################################################################################################
     ##### ACTIONS CLIENTS ############################################################################################################################################################################################################################
@@ -325,7 +350,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = FSMNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=5)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=10)
     executor.add_node(node)
     try:
         executor.spin()

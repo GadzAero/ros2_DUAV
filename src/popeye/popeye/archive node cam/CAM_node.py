@@ -212,7 +212,6 @@ class CAMNode(Node):
     def offset_distheading_meters_to_GPS(self):
         self.drone_lat     = self.uav_lat
         self.drone_long    = self.uav_lon
-        self.drone_heading = (math.degrees(self.uav_yaw)+360) % 360
         R = 6371000  
         # Conversion en radians
         self.drone_lat      = math.radians(self.drone_lat)
@@ -228,8 +227,6 @@ class CAMNode(Node):
         
         return (self.target_lat, self.target_lon)
 
-    
-
 #########################################################################################################################################################################################################
 ##### Node entry point #####################################################################################################################################################################
 def main(args=None):
@@ -237,7 +234,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node     = CAMNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=2)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
     executor.add_node(node)
     try:
         executor.spin()

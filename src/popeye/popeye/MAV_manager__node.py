@@ -4,6 +4,7 @@
 # General importation
 from time import sleep
 import time
+from popeye.PARAMS_utils import *
 # Import ROS2 utils
 import rclpy
 from rclpy.node import Node
@@ -15,10 +16,12 @@ from pymavlink import mavutil
 from pymavlink.mavutil import mavlink as mavkit
 # Import Intefaces
 from interfaces.srv import SetMode, Arm, Rtl, Disarm, Drop
-from interfaces.action import Takeoff, Land, Reposition
+from interfaces.action import Takeoff, Land, Reposition, PrecisionLand, PrecisionRepo
 from interfaces.msg import Fire, Attitude, GpsPosition 
 # Import MAV utils
 import popeye.MAV_manager__utils as mav_utils
+# Import geopy utils
+import geopy.distance as geodst
 
 ############################################################################################################################################################################################################################
 ##### Node MAVLink Manager ############################################################################################################################################################################################################################
@@ -28,12 +31,10 @@ class MAVManagerNode(Node):
 
         ### Connexion to MAVLink
         try:
-            # ADRUPILOT SITL
-            self.mav_master = mavutil.mavlink_connection('tcp:127.0.0.1:5782', baud=115200)
-            # PX4 SITL
-            # self.mav_master = mavutil.mavlink_connection('udp:127.0.0.1:14542')
-            # RADIO
-            # self.mav_master = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
+            if on_raspi:
+                self.mav_master = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
+            else:
+                self.mav_master = mavutil.mavlink_connection('tcp:127.0.0.1:5782', baud=115200)
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
             raise RuntimeError("Impossible de se connecter à MAVLink.")
@@ -68,32 +69,36 @@ class MAVManagerNode(Node):
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
             30, 1e6, 0, 0, 0, 0, 0)
         
-        ### TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
-        self.timer__read_mavlink = self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### SERVICES (running them concurently to themselves or actions is useless)
-        self.srv__set_mode       = self.create_service(SetMode, 'set_mode',       self.srv_cb__set_mode,       callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__arm            = self.create_service(Arm,     'arm',            self.srv_cb__arm,            callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__payload_drop   = self.create_service(Drop,    'payload_drop',   self.srv_cb__payload_drop,   callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__payload_reload = self.create_service(Drop,    'payload_reload', self.srv_cb__payload_reload, callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__rtl            = self.create_service(Rtl,     'rtl',            self.srv_cb__rtl,            callback_group=MutuallyExclusiveCallbackGroup())
-        self.srv__disarm         = self.create_service(Disarm,  'disarm',         self.srv_cb__disarm,         callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### ACTIONS (running them concurently to themselves or services is useless)
-        self.act__takeoff    = ActionServer(self, Takeoff,    'takeoff',    self.act_cb__takeoff,    callback_group=MutuallyExclusiveCallbackGroup())
-        self.act__land       = ActionServer(self, Reposition, 'reposition', self.act_cb__reposition, callback_group=MutuallyExclusiveCallbackGroup())
-        self.act__reposition = ActionServer(self, Land,       'land',       self.act_cb__land,       callback_group=MutuallyExclusiveCallbackGroup())
-        
-        ### PUBLISHERS 
-        self.pub__fire_coor = self.create_publisher(Fire,        'fire',     10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__attitude  = self.create_publisher(Attitude, 'attitude', 10, callback_group=MutuallyExclusiveCallbackGroup())
-        self.pub__position  = self.create_publisher(GpsPosition, 'position', 10, callback_group=MutuallyExclusiveCallbackGroup())
-        
+        ### ROS2 Callbacks
+        ## Callback groups
+        non_critical_group = ReentrantCallbackGroup()
+        ## TIMER CALLBACK (it must run in paralell of services and actions but running it concurently to itself is useless)
+        self.create_timer(0.05, self.timer_cb__read_mavlink, callback_group=MutuallyExclusiveCallbackGroup())
+        ## Publishers
+        self.pub__fire_coor = self.create_publisher(Fire,        'fire',         10, callback_group=non_critical_group)
+        self.pub__attitude  = self.create_publisher(Attitude,    'uav_attitude', 10, callback_group=non_critical_group)
+        self.pub__position  = self.create_publisher(GpsPosition, 'uav_position', 10, callback_group=non_critical_group)
+        ## Subscribers
+        self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=non_critical_group)
+        self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=non_critical_group)
+        ## Services
+        self.create_service(SetMode, 'set_mode',       self.srv_cb__set_mode,       callback_group=non_critical_group)
+        self.create_service(Arm,     'arm',            self.srv_cb__arm,            callback_group=non_critical_group)
+        self.create_service(Drop,    'payload_drop',   self.srv_cb__payload_drop,   callback_group=non_critical_group)
+        self.create_service(Drop,    'payload_reload', self.srv_cb__payload_reload, callback_group=non_critical_group)
+        self.create_service(Rtl,     'rtl',            self.srv_cb__rtl,            callback_group=non_critical_group)
+        self.create_service(Disarm,  'disarm',         self.srv_cb__disarm,         callback_group=non_critical_group)
+        ## Action servers
+        ActionServer(self, Takeoff,       'takeoff',        self.act_cb__takeoff,        callback_group=non_critical_group)
+        ActionServer(self, Reposition,    'reposition',     self.act_cb__reposition,     callback_group=non_critical_group)
+        ActionServer(self, Land,          'land',           self.act_cb__land,           callback_group=non_critical_group)
+        ActionServer(self, PrecisionLand, 'precision_land', self.act_cb__precision_land, callback_group=non_critical_group)
+        ActionServer(self, PrecisionRepo, 'precision_repo', self.act_cb__precision_repo, callback_group=non_critical_group)
         ### General Parameters
         ## Popeye state
-        self.landed_state = ""
-        
-        ### Timers for debug 
+        self.landed_state = None
+        self.lon_cam_park = None
+        ## Timers for debug 
         self.elapsed_time = -time.time()
         self.start_time = time.time()
         
@@ -128,15 +133,16 @@ class MAVManagerNode(Node):
                 self.get_logger().info('RECEIVED > %s' % msg.text)
         ## For GLOBAL_POSITION_INT messages
         elif msg_type == "GLOBAL_POSITION_INT":
-            self.popeye_pos_lat = msg.lat/1e7
-            self.popeye_pos_lon = msg.lon/1e7
-            self.popeye_pos_alt = msg.relative_alt/1e3
+            self.uav_lat = msg.lat/1e7
+            self.uav_lon = msg.lon/1e7
+            self.uav_pos = (self.uav_lat, self.uav_lon)
+            self.uav_alt = msg.relative_alt/1e3
             msg_pub     = GpsPosition()
-            msg_pub.lat = self.popeye_pos_lat
-            msg_pub.lon = self.popeye_pos_lon
-            msg_pub.alt = self.popeye_pos_alt
+            msg_pub.lat = self.uav_lat
+            msg_pub.lon = self.uav_lon
+            msg_pub.alt = self.uav_alt
             self.pub__position.publish(msg_pub)
-            # self.get_logger().info(f"RECEIVED > Lat: {self.popeye_pos_lat} Lon: {self.popeye_pos_lon} Alt: {self.popeye_pos_alt}")
+            # self.get_logger().info(f"RECEIVED > Lat: {self.uav_lat} Lon: {self.uav_lon} Alt: {self.uav_alt}")
         ## For LANDED_STATE messages
         elif msg_type == "EXTENDED_SYS_STATE":
             landed_state_id = msg.landed_state
@@ -168,9 +174,157 @@ class MAVManagerNode(Node):
             msg_pub.roll  = self.roll
             self.pub__attitude.publish(msg_pub)
             # self.get_logger().info(f"RECEIVED > Yaw: {self.yaw} Pitch: {self.pitch} Roll: {self.roll}")
+            
+    ############################################################################################################################################################################################################################
+    ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for CAM FIRE POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__cam_fire_pos(self, msg):
+        print("cam_pos")
+        self.pos_cam_fire = (msg.lat, msg.lon)
+        self.alt_cam_fire = msg.alt
+        print()
+        # self.get_logger().info(f" >>> CAM_FIRE_POS:{self.pos_cam_fire} <<<")
+        # print()
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Subscriber for CAM PARK POS  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def sub_cb__cam_park_pos(self, msg):
+        self.lat_cam_park = msg.lat
+        self.lon_cam_park = msg.lon
+        self.pos_cam_park = (msg.lat, msg.lon)
+        self.alt_cam_park = msg.alt
+        # print()
+        # self.get_logger().info(f" >>> CAM_PARK_POS:{self.pos_cam_park} <<<")
+        # print()
 
     ############################################################################################################################################################################################################################
     ##### ACTIONS CALLBACK ############################################################################################################################################################################################################################
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Action server to PRECISION LAND ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def act_cb__precision_land(self, goal_handle):
+        print()
+        self.get_logger().info(f"> Call action PRECISION LAND")
+        
+        ## If no park target is found, return fail
+        while self.lon_cam_park is None or self.landed_state is None:
+            self.get_logger().warning("      -> Failure: No park target as been published yet.")
+            sleep(1)
+            # goal_handle.abort()
+            # return PrecisionLand.Result(success=False)
+        
+        ### Precision landing main loop
+        alt, is_pland_success, min_alt, tolerance, dist = (0., False, 6., 0.7, 0.)
+        for i in range(100):
+            ## If the uav is above park target
+            alt = self.uav_alt
+            if dist < tolerance:
+                alt = self.uav_alt-0.5
+                if self.uav_alt < min_alt:
+                    is_pland_success = True
+                    break
+            ## Reposition the drone above park target
+            if not mav_utils.mav_reposition(self.mav_master, self.lat_cam_park, self.lon_cam_park, alt):
+                self.get_logger().warn("      -> Failure: MAV_REPOSITION command not valid")
+                goal_handle.abort()
+                return PrecisionLand.Result(success=False)
+            ## Get the distance to target
+            dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
+            ## If uav is too low
+            if alt < min_alt-1.5:
+                is_pland_success = False
+                break
+            ## Publish feedback
+            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=float(self.uav_alt), dist_target=float(dist) ,land_state=str(self.landed_state)))
+            self.get_logger().info(f"      ... Precision land {i} (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
+            sleep(1)
+            
+        ## Land (if we are at a low alt)
+        self.get_logger().info(f"> Call action LAND")
+        if not mav_utils.mav_land(self.mav_master):
+            self.get_logger().warn("      -> Failure: LAND command not valid")
+            goal_handle.abort()
+            return PrecisionLand.Result(success=False)
+        while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
+            dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
+            goal_handle.publish_feedback(PrecisionLand.Feedback(current_alt=self.uav_alt, dist_target=dist ,land_state=self.landed_state))
+            self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
+            sleep(1)
+        
+        ## If precision land has failed
+        if not is_pland_success:
+            self.get_logger().warn("      -> Failure: Precision land failed but drone as landed")
+            goal_handle.abort()
+            return PrecisionLand.Result(success=False)
+        
+        ## Else return success
+        self.get_logger().info("      -> Success")
+        goal_handle.succeed()
+        return PrecisionLand.Result(success=True)
+    #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #----- Action server to PRECISION REPOSITION WITH ALT SELECTION ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def act_cb__precision_repo(self, goal_handle):
+        print()
+        self.get_logger().info(f"> Call action PRECISION REPO")
+        
+        ### If no park target (aruco=5) is found, return fail
+        while self.lon_cam_park is None or self.landed_state != "MAV_LANDED_STATE_IN_AIR":
+            self.get_logger().warning("      -> Failure: No park target as been published yet or the drone is not in air.")
+            sleep(1)
+            goal_handle.abort()
+            return PrecisionRepo.Result(success=False)
+        
+        ### Precision descent main loop
+        next_alt, is_prec_desc_success, goal_alt, tolerance, dist, dangerous_alt= (0., False, 6., 0.7, 0., 1.)
+        for i in range(100):
+            ## Get the current state
+            next_alt = self.uav_alt
+            dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
+            ## If uav is at dangerously low altitude 
+            if self.uav_alt < dangerous_alt:
+                is_prec_desc_success = False
+                break
+            ## If the uav is above park target
+            elif dist < tolerance:
+                print("ok")
+                next_alt -= 0.5
+                if self.uav_alt < goal_alt:
+                    is_prec_desc_success = True
+                    break
+            ## Reposition the drone above park target
+            elif not mav_utils.mav_reposition(self.mav_master, self.lat_cam_park, self.lon_cam_park, next_alt):
+                self.get_logger().warn("      -> Failure: MAV_REPOSITION command not valid")
+                goal_handle.abort()
+                return PrecisionRepo.Result(success=False)
+            ## Publish feedback
+            goal_handle.publish_feedback(PrecisionRepo.Feedback(current_alt=float(self.uav_alt), dist_target=float(dist), land_state=str(self.landed_state)))
+            self.get_logger().info(f"      ... Precision repo {i} (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
+            sleep(1)
+            
+        print("aaaaaa")
+        ## Land (if we are at a dangerously low alt)
+        if self.uav_alt <= dangerous_alt:
+            self.get_logger().info(f"> Call action LAND")
+            if not mav_utils.mav_land(self.mav_master):
+                self.get_logger().warn("      -> Failure: LAND command not valid")
+                goal_handle.abort()
+                return PrecisionRepo.Result(success=False)
+            while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
+                dist = geodst.distance(self.uav_pos, self.pos_cam_park).m
+                goal_handle.publish_feedback(PrecisionRepo.Feedback(current_alt=self.uav_alt, dist_target=dist ,land_state=self.landed_state))
+                self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, dist_target={dist}, state:{self.landed_state})")
+                sleep(1)
+        
+        ## If precision descent has failed
+        if not is_prec_desc_success:
+            self.get_logger().warn("      -> Failure: Precision land failed but drone as landed")
+            goal_handle.abort()
+            return PrecisionRepo.Result(success=False)
+        
+        ## Else return success
+        self.get_logger().info("      -> Success")
+        goal_handle.succeed()
+        return PrecisionRepo.Result(success=True)
+
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to TAKEOFF ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__takeoff(self, goal_handle):
@@ -178,13 +332,13 @@ class MAVManagerNode(Node):
         self.get_logger().info(f"> Call action TAKEOFF (Alt:{goal_handle.request.alt})")
         
         if not mav_utils.mav_takeoff(self.mav_master, goal_handle.request.alt):
-            self.get_logger().warning("      -> Failure: command not valid")
+            self.get_logger().warn("      -> Failure: command not valid")
             goal_handle.abort()
             return Takeoff.Result(success=False)
         
         while self.landed_state != "MAV_LANDED_STATE_IN_AIR":
-            goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.popeye_pos_alt, state=self.landed_state))
-            self.get_logger().info(f"      ... Taking off (current_alt:{self.popeye_pos_alt}, state:{self.landed_state})")
+            goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.uav_alt, state=self.landed_state))
+            self.get_logger().info(f"      ... Taking off (current_alt:{self.uav_alt}, state:{self.landed_state})")
             sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
@@ -194,24 +348,25 @@ class MAVManagerNode(Node):
     def act_cb__reposition(self, goal_handle):
         print()
         self.get_logger().info(f"> Call action REPOSITION (lat:{goal_handle.request.lat}, lon:{goal_handle.request.lon}, alt:{goal_handle.request.alt})")
+        self.get_logger().warn(f"> Update calculation of distance !")
         
         if not mav_utils.mav_reposition(self.mav_master, goal_handle.request.lat, goal_handle.request.lon, goal_handle.request.alt):
-            self.get_logger().warning("      -> Failure: command not valid")
+            self.get_logger().warn("      -> Failure: command not valid")
             goal_handle.abort()
             return Reposition.Result(success=False)
         
         time_at_position = 0; sleep_time = 1
         tolerance = 1.0e-06
         while time_at_position < 5:
-            dist_to_goal = ((goal_handle.request.lat-self.popeye_pos_lat)**2 + (goal_handle.request.lon-self.popeye_pos_lon)**2)**0.5
-            delta_alt    = goal_handle.request.alt-self.popeye_pos_alt
+            dist_to_goal = ((goal_handle.request.lat-self.uav_lat)**2 + (goal_handle.request.lon-self.uav_lon)**2)**0.5
+            delta_alt    = goal_handle.request.alt-self.uav_alt
             time_at_position = time_at_position+sleep_time if (dist_to_goal<=tolerance and delta_alt<0.15) else 0
             goal_handle.publish_feedback(Reposition.Feedback(time_at_position=float(time_at_position), dist_to_goal=dist_to_goal, delta_alt=delta_alt))
             self.get_logger().info(f"      ... Repositioning (dist_to_goal:{dist_to_goal}, delta_alt:{delta_alt:.1f}, time_at_position:{time_at_position})")
             sleep(sleep_time)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
-        return Reposition.Result(success=True)
+        return Reposition.Result(success=True) # goal_hadndle.results.sucess
     #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #----- Action server to LAND ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def act_cb__land(self, goal_handle):
@@ -219,13 +374,13 @@ class MAVManagerNode(Node):
         self.get_logger().info(f"> Call action LAND")
         
         if not mav_utils.mav_land(self.mav_master):
-            self.get_logger().warning("      -> Failure: command not valid")
+            self.get_logger().warn("      -> Failure: command not valid")
             goal_handle.abort()
             return Land.Result(success=False)
         
         while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
-            goal_handle.publish_feedback(Land.Feedback(current_alt=self.popeye_pos_alt, state=self.landed_state))
-            self.get_logger().info(f"      ... Landing (current_alt:{self.popeye_pos_alt}, state:{self.landed_state})")
+            goal_handle.publish_feedback(Land.Feedback(current_alt=self.uav_alt, state=self.landed_state))
+            self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, state:{self.landed_state})")
             sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
@@ -325,7 +480,7 @@ def main(args=None):
     
     ### Creating the mutlithread executor
     node = MAVManagerNode()
-    executor = rclpy.executors.MultiThreadedExecutor(num_threads=3)
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=10)
     executor.add_node(node)
     try:
         executor.spin()
