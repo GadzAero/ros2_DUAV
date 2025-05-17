@@ -25,13 +25,16 @@ class CAMNode(Node):
     
     ### START VIDEO CAPTURE
     if use_camera:
-      self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing_straight.mp4")
+      self.vd_capture = cv2.VideoCapture(0)
     else:
+      print("aaa")
       # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset.mp4")
       # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/test_offset_diag.mp4")
       # self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing.mp4")
       self.vd_capture = cv2.VideoCapture(path_DUAV+"/src/popeye/popeye/videos/precision_landing_straight.mp4")
     self.cv_bridge = CvBridge()
+
+    self.get_logger().info(" > NODE CAM_node STARTED.")
    
   ############################################################################################################################################################################################################################
   ##### TIMER CALLBACK ############################################################################################################################################################################################################################
