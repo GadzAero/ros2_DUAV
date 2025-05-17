@@ -39,8 +39,8 @@ class PopeyeFSM(StateMachine):
     ws1__select_coord = State('ws1__SelectCoords')
     
     ### Workshop 2
-    ws2__wait_for_fire_coords = State('WS2__WaitForFireCoords')
-    ws2__get_cam_fire_pos     = State('WS2__GetCamFirePos')
+    # ws2__wait_for_fire_coords = State('WS2__WaitForFireCoords')
+    # ws2__get_cam_fire_pos     = State('WS2__GetCamFirePos')
 
     ###### EVENTS ################################################################################################################################################################################################################################################################################################################################################
     ### Workshops events
@@ -51,13 +51,11 @@ class PopeyeFSM(StateMachine):
                      | std__takeoffed.to(std__repositioned)
                      | std__repositioned.to(std__landed)
                      | std__landed.to(idle))
-    event_WS2 = Event(idle.to(ws2__wait_for_fire_coords)
-                     | ws2__wait_for_fire_coords.to(std__ready)
+    event_WS2 = Event(idle.to(ws1__select_coord)
+                     | ws1__select_coord.to(std__ready)
                      | std__ready.to(std__takeoffed)
                      | std__takeoffed.to(std__repositioned)
-                     | std__repositioned.to(ws2__get_cam_fire_pos)
-                     | ws2__get_cam_fire_pos.to(std__square_search)
-                     | std__square_search.to(std__payload_drop)
+                     | std__repositioned.to(std__payload_drop)
                      | std__payload_drop.to(std__rtl) 
                      | std__rtl.to(idle))
     event_payload_reload = Event(idle.to(std__payload_reload)
@@ -339,21 +337,21 @@ class PopeyeFSM(StateMachine):
         self.send(PopeyeFSM.event)
         
     ### WS2: Firefighter states
-    @ws2__wait_for_fire_coords.enter
-    def ws2_on_enter__wait_for_GPS_coor(self):
-        print("[FSM] > WAIT FOR TARGET COORDONATES.")
-        while not self.node.is_fire:
-            continue
-        self.repo_lat = self.node.lat_fire
-        self.repo_lon = self.node.lon_fire
-        self.repo_alt = 2.
-        print(f"{YELLOW}[FSM] > FIRE SPOTTED > LAT:{self.repo_lat} LON:{self.repo_lon}.{RESET}")
-        print("[FSM] > TARGET COORDONATES ACQUIRED.")
-        self.send(PopeyeFSM.event)
-    @ws2__get_cam_fire_pos.enter
-    def ws2_on_enter__get_fire_pos(self):
-        print("[FSM] > SEARCHING FOR FIRE.")
-        sleep(10)
-        # Service to get fire position from camera (Felix)
-        print("[FSM] > FOUND FIRE.")
-        self.send(PopeyeFSM.event)
+    # @ws2__wait_for_fire_coords.enter
+    # def ws2_on_enter__wait_for_GPS_coor(self):
+    #     print("[FSM] > WAIT FOR TARGET COORDONATES.")
+    #     while not self.node.is_fire:
+    #         continue
+    #     self.repo_lat = self.node.lat_fire
+    #     self.repo_lon = self.node.lon_fire
+    #     self.repo_alt = 2.
+    #     print(f"{YELLOW}[FSM] > FIRE SPOTTED > LAT:{self.repo_lat} LON:{self.repo_lon}.{RESET}")
+    #     print("[FSM] > TARGET COORDONATES ACQUIRED.")
+        # self.send(PopeyeFSM.event)
+    # @ws2__get_cam_fire_pos.enter
+    # def ws2_on_enter__get_fire_pos(self):
+    #     print("[FSM] > SEARCHING FOR FIRE.")
+    #     sleep(10)
+    #     # Service to get fire position from camera (Felix)
+    #     print("[FSM] > FOUND FIRE.")
+    #     self.send(PopeyeFSM.event)
