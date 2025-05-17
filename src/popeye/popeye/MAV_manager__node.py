@@ -292,6 +292,7 @@ class MAVManagerNode(Node):
             self.get_logger().warn("      -> Failure: command not valid")
             goal_handle.abort()
             return Takeoff.Result(success=False)
+        self.get_logger().warn("      -> MAV command sended")
         
         while self.landed_state != "MAV_LANDED_STATE_IN_AIR":
             # while self.action_paused or self.land:
@@ -309,7 +310,7 @@ class MAVManagerNode(Node):
             #         return Takeoff.Result(success=True)
             goal_handle.publish_feedback(Takeoff.Feedback(current_alt=self.uav_alt, land_state=self.landed_state))
             self.get_logger().info(f"      ... Taking off (current_alt:{self.uav_alt}, land_state:{self.landed_state})")
-            sleep(1)
+            # sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
         return Takeoff.Result(success=True)
@@ -325,7 +326,8 @@ class MAVManagerNode(Node):
             goal_handle.abort()
             return Reposition.Result(success=False)
         
-        time_at_position = 0; sleep_time = 1
+        time_at_position = 0
+        sleep_time = 1
         tolerance = 1.0e-06
         while time_at_position < 5:
             dist_to_goal = ((goal_handle.request.lat-self.uav_lat)**2 + (goal_handle.request.lon-self.uav_lon)**2)**0.5
@@ -333,7 +335,7 @@ class MAVManagerNode(Node):
             time_at_position = time_at_position+sleep_time if (dist_to_goal<=tolerance and delta_alt<0.15) else 0
             goal_handle.publish_feedback(Reposition.Feedback(time_at_position=float(time_at_position), dist_to_goal=dist_to_goal, delta_alt=delta_alt))
             self.get_logger().info(f"      ... Repositioning (dist_to_goal:{dist_to_goal}, delta_alt:{delta_alt:.1f}, time_at_position:{time_at_position})")
-            sleep(sleep_time)
+            # sleep(sleep_time)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
         return Reposition.Result(success=True)
@@ -347,11 +349,12 @@ class MAVManagerNode(Node):
             self.get_logger().warn("      -> Failure: command not valid")
             goal_handle.abort()
             return Land.Result(success=False)
+        self.get_logger().warn("      -> MAV command sended")
         
         while self.landed_state != "MAV_LANDED_STATE_ON_GROUND":
             goal_handle.publish_feedback(Land.Feedback(current_alt=self.uav_alt, landed_state=self.landed_state))
             self.get_logger().info(f"      ... Landing (current_alt:{self.uav_alt}, landed_state:{self.landed_state})")
-            sleep(1)
+            # sleep(1)
         self.get_logger().info("      -> Success")
         goal_handle.succeed()
         return Land.Result(success=True)

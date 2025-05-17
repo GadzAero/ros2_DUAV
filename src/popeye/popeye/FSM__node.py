@@ -37,18 +37,18 @@ class FSMNode(Node):
         self.create_subscription(GpsPosition, 'CAM/fire_pos', self.sub_cb__cam_fire_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
         self.create_subscription(GpsPosition, 'CAM/park_pos', self.sub_cb__cam_park_pos, 10, callback_group=MutuallyExclusiveCallbackGroup())
         ## Services clients
-        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=cb_1)
-        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=cb_1)
-        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=cb_1)
-        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=cb_1)
-        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=cb_1)
-        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=cb_1)
-        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=cb_1)
-        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=cb_1)
+        self.cli_srv__set_mode       = self.create_client(SetMode,   'set_mode',       callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__arm            = self.create_client(Arm,       'arm',            callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__payload_drop   = self.create_client(Drop,      'payload_drop',   callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__payload_reload = self.create_client(Drop,      'payload_reload', callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__rtl            = self.create_client(Rtl,       'rtl',            callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__disarm         = self.create_client(Disarm,    'disarm',         callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__take_photo     = self.create_client(TakePhoto, 'take_photo',     callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_srv__take_video     = self.create_client(TakeVideo, 'take_video',     callback_group=MutuallyExclusiveCallbackGroup())
         ## Actions clients
-        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=cb_1)
-        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=cb_1)
-        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=cb_1)
+        self.cli_act__takeoff    = ActionClient(self, Takeoff,    'takeoff',    callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_act__land       = ActionClient(self, Land,       'land',       callback_group=MutuallyExclusiveCallbackGroup())
+        self.cli_act__reposition = ActionClient(self, Reposition, 'reposition', callback_group=MutuallyExclusiveCallbackGroup())
 
         ### GLOBAL PARAMS
         self.cancel_action = False
@@ -79,7 +79,7 @@ class FSMNode(Node):
     #----- Timer for FSM  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def timer_cb__init_fsm(self):
         self.get_logger().info(" > FSM started.")
-        if not on_raspi:
+        if False:
             self.call__disarm(force=True)
             self.get_logger().warn("!!!!!!!!! IT WILL CRASH !!!!!!!!!")
             self.get_logger().warn("BE CAREFUL : YOU HAVE TO PASS IN 'on_raspi' mode (PARAMS_utils.py)")
@@ -177,6 +177,7 @@ class FSMNode(Node):
         self.get_logger().info("       ... TAKEOFF goal accepted")
         
         action_future = goal_handle_future.result().get_result_async()
+        self.get_logger().info("       ... wainting for action end")
         while not action_future.done():
             rclpy.spin_once(self, timeout_sec=0.5)
             
@@ -208,16 +209,12 @@ class FSMNode(Node):
         self.get_logger().info("       ... REPOSITION goal accepted")
         
         action_future = goal_handle_future.result().get_result_async()
+        self.get_logger().info("       ... async goal hangle sended")
         while not action_future.done():
             rclpy.spin_once(self, timeout_sec=0.5)
-            if self.cancel_action:
-                cancel_future =  goal_handle_future.result().cancel_goal_async()
-                rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=0.5)
-                self.get_logger().warning("       ==> REPOSITION canceled")
-                self.call__rtl()
-                return False
             
         rclpy.spin_until_future_complete(self, action_future)
+        self.get_logger().info("       ... async run futur received")
         if not action_future.result().result.success:
             self.get_logger().warning("       ==> REPOSITION failed")
             return False
@@ -236,13 +233,22 @@ class FSMNode(Node):
         goal_handle_future = self.cli_act__land.send_goal_async(goal__land, feedback_callback=lambda feedback_msg: 
                                                                    self.get_logger().info(f"       ... Feedback (Current_alt:{feedback_msg.feedback.current_alt:.1f}, State:{feedback_msg.feedback.state})"))
         rclpy.spin_until_future_complete(self, goal_handle_future)
+        self.get_logger().info("       ... async goal handle sended")
         if not goal_handle_future.result().accepted:
             self.get_logger().warn("       ... LAND goal rejected")
             return False
         self.get_logger().info("       ... LAND goal accepted")
         
+        result = goal_handle_future.result()
+        if result is None:
+            self.get_logger().error("       ... Goal handle future result is None!")
+            return False
         action_future = goal_handle_future.result().get_result_async()
-        rclpy.spin_until_future_complete(self, action_future)
+        self.get_logger().info("       ... waiting for land to finish")
+        while not action_future.done():
+            rclpy.spin_once(self, timeout_sec=0.5)
+
+        self.get_logger().info("       ... async run sended")
         if not action_future.result().result.success:
             self.get_logger().warning("       ==> LAND failed")
             return False
