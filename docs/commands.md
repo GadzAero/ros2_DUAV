@@ -31,6 +31,12 @@ sim_vehicle.py -v ArduCopter -f hexa -I2 --no-mavproxy --custom-location=45.4389
 mavproxy.py --master=/dev/ttyUSB0 --out=tcpin:127.0.0.1:5780 --out=tcpin:127.0.0.1:5782 --out=tcpin:127.0.0.1:5783 --streamrate=-1
 ```
 ## Launching ROS2 application
+
+Make sure to use the good pathing and configuration for Popeye (`src/popeye/popeye/PARAMS_utils.py`) :
+<div style="text-align: center;">
+  <img src="configuration.png" alt="Software Architecture" width="250" />
+</div>
+
 ### Olive node
 ```bash
 colcon build --packages-select olive && source install/setup.bash && ros2 launch olive olive_nodes.launch.py 

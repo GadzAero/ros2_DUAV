@@ -34,7 +34,7 @@ class MAVManagerNode(Node):
             if on_raspi:
                 self.mav_master = mavutil.mavlink_connection('/dev/ttyACM0', baud=115200)
             else:
-                self.mav_master = mavutil.mavlink_connection('tcp:127.0.0.1:5782', baud=115200)
+                self.mav_master = mavutil.mavlink_connection('tcp:127.0.0.1:5780', baud=115200)
         except Exception as e:
             self.get_logger().error(f"Erreur MAVLink : {e}")
             raise RuntimeError("Impossible de se connecter à MAVLink.")

@@ -58,17 +58,17 @@ class FSMNode(Node):
     def timer_cb__fsm(self):
         self.get_logger().info(" > FSM started.")
         if not on_raspi:
-            self.call__disarm(force=True)
             self.get_logger().warn("!!!!!!!!! IT WILL CRASH !!!!!!!!!")
             self.get_logger().warn("BE CAREFUL : YOU HAVE TO PASS IN 'on_raspi' mode (PARAMS_utils.py)")
             self.get_logger().warn("!!!!!!!!! IT WILL CRASH !!!!!!!!!")
+            self.call__disarm(force=True)
         ### Starting the FSM
         sm = fsm.PopeyeFSM(self)
         ### Save the FSM graph and destroy the timer
         sm._graph().write_png(path_DUAV+"/src/popeye/popeye//POPEYE_FSM.png")
         self.get_logger().warn(" > FSM ended.")
     def timer_cb__test(self):
-        self.get_logger().info(" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        pass
     
     ############################################################################################################################################################################################################################
     ##### SUBSCRIBERS CALLBACKS ############################################################################################################################################################################################################################
