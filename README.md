@@ -11,6 +11,8 @@ It was developed by our team, __Gadz'Aero__, for the __Dassault UAV Challenge 20
 
 🛠 <em>Note: ChatGPT was used to help streamline the documentation process.</em>
 
+🛠 <em>Main developper: Stépane Binon</em> do not hesitate to take contact with me throught LinkedIn (https://www.linkedin.com/in/st%C3%A9pane-binon-a204691a1/?locale=en_US) if needed 😉
+
 ## What Can You Reuse From This Repository?
 
 Hello dear reader,
